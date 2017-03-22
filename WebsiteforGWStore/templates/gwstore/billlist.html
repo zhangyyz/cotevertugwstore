@@ -1,0 +1,81 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1">
+    <title></title>
+</head>
+<body data-ajax="false">
+<link rel="stylesheet" href="{% static 'gwstore/css/my_breakpoint_and_common_style.css' %}"/>
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"/>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+
+{% include 'gwstore/navbar.html' %}
+<div class="middle_content">
+{% if all_bills %}
+    <ul data-role="listview">
+        <table data-role="table" id="tbl_billlist" class="my-breakpoint-for-two-columns ui-corner-all ui-shadow">
+            <thead>
+            <tr>
+                <th>单号</th>
+                <th>收件人</th>
+                <th>物品清单</th>
+                <th>状态</th>
+                <th>可执行的操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for bill in all_bills %}
+                <tr>
+                    <td style="vertical-align:middle">
+                        <div>{{ bill.bill_number }}</div>
+                    </td>
+                    <td style="vertical-align:middle">
+                        <div>{{ bill.receiver_name }}， {{ bill.receiver_address }}</div>
+                    </td>
+                    <td style="vertical-align:middle">
+                        <div>{{ bill.item_1_description }}：{{ bill.item_1_quantity }}
+                            {% if bill.item_2_description != '' %}
+                                ；　{{ bill.item_2_description }}：{{ bill.item_2_quantity }}
+                            {% endif %}
+                            {% if bill.item_3_description != '' %}
+                                ；　{{ bill.item_3_description }}：{{ bill.item_3_quantity }}
+                            {% endif %}
+                            {% if bill.item_4_description != '' %}
+                                ；　{{ bill.item_4_description }}：{{ bill.item_4_quantity }}
+                            {% endif %}
+                            {% if bill.item_5_description != '' %}
+                                ；　{{ bill.item_5_description }}：{{ bill.item_5_quantity }}
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td style="vertical-align:middle; white-space: nowrap">
+                        <div>{{ bill.status_description }}</div>
+                    </td>
+                    <td style="vertical-align:middle">
+                        {% if bill.status_code == 'A'%}
+                            <!--The status is waiting for picking up-->
+                            <div><a href="/billinput/?bill_number={{ bill.bill_number }}&next={{ request.get_full_path|urlencode }}" data-role="button"
+                                    rel="external" target="_self">修改</a></div>
+                        {% elif  bill.status_code == 'B1'%}
+                            <div><a href="/billinput/?bill_number={{ bill.bill_number }}&next={{ request.get_full_path|urlencode }}" data-role="button"
+                                    rel="external" target="_self">补充信息</a></div>
+                        {% else %}
+                            <div><button disabled>不能修改</button></div>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </ul>
+{% else %} <!--There is no existing bill for this user-->
+    <div data-role="header">
+        <h1>您的用户名下暂时还没有任何快递单。</h1>
+    </div>
+{% endif %}
+</div>
+</body>
+</html>

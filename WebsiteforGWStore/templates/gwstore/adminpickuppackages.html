@@ -1,0 +1,522 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1">
+    <title>搜索快递单</title>
+</head>
+<body>
+<style>
+    .error_msg {
+        font-size: 0.8em;
+        padding-bottom: 0.5em;
+        white-space: normal;
+        color: red;
+    }
+
+    /*Remove the left padding from the labels so that they can be aligned to the left side.*/
+    label.ui-body {
+        padding-left: 0px;
+    }
+</style>
+
+<link rel="stylesheet" href="{% static 'gwstore/css/my_breakpoint_and_common_style.css' %}"/>
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"/>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<script src="http://cdn.jsdelivr.net/jquery.validation/1.15.0/jquery.validate.min.js"></script>
+{% include 'gwstore/navbar.html' %}
+
+<form data-ajax="false">
+    {% csrf_token %}
+
+
+    <div class="middle_content">
+        <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+            <div class="ui-block-a my-breakpoint-for-two-columns">
+                <label class='ui-body'>用户名：</label>
+            </div>
+            <div class="ui-block-b my-breakpoint-for-two-columns">
+                <input type="text" id="user_name_to_search"
+                       name="user_name_to_search"
+                       value="{{ request.GET.user_name_to_search|default_if_none:'' }}"/>
+            </div>
+            <div class="ui-block-a my-breakpoint-for-two-columns">
+                <label class='ui-body'>快递单号（模糊搜索）：</label>
+            </div>
+            <div class="ui-block-b my-breakpoint-for-two-columns">
+                <input type="text" id="bill_number_to_search"
+                       name="bill_number_to_search"
+                       value="{{ request.GET.bill_number_to_search|default_if_none:'' }}"/>
+            </div>
+            <div class="ui-block-a my-breakpoint-for-two-columns">
+                <label class='ui-body'>更新日期：</label>
+            </div>
+            <div class="ui-block-b my-breakpoint-for-two-columns">
+                <select id="update_time_to_search" name="update_time_to_search">
+                    <option value=""
+                            {% if request.GET.update_time_to_search == None or request.GET.update_time_to_search == ''%}
+                            selected {% endif %}>全部
+                    </option>
+                    <option value="7" {% if request.GET.update_time_to_search == '7' %} selected {% endif %}>
+                        最近一周
+                    </option>
+                </select>
+            </div>
+
+            <div class="ui-block-a my-breakpoint-for-two-columns">
+                <label class='ui-body'>包裹状态：</label>
+            </div>
+            <div class="ui-block-b my-breakpoint-for-two-columns">
+                <select id="status_code_to_search" name="status_code_to_search">
+                    <option value=""
+                            {% if request.GET.status_code_to_search != 'A' and request.GET.status_code_to_search != 'B' %}
+                            selected {% endif %}>全部
+                    </option>
+                    <option value="A" {% if request.GET.status_code_to_search == 'A' %} selected {% endif %}>
+                        尚未取货
+                    </option>
+                    <option value="B" {% if request.GET.status_code_to_search == 'B' %} selected {% endif %}>
+                        已经取货
+                    </option>
+                    <option value="B1" {% if request.GET.status_code_to_search == 'B1' %} selected {% endif %}>
+                        已经取货,但快递单信息不完整
+                    </option>
+                </select>
+            </div>
+            <div class="ui-block-a my-breakpoint-for-two-columns"></div>
+            <div class="ui-block-b my-breakpoint-for-two-columns"><span style="float:right"><a href="#" id="btn_search"
+                                                                                               class="ui-btn ui-btn-inline ui-corner-all">搜索</a>
+                                                                                                   </span>
+            </div>
+        </div>
+
+        {% if bills_in_one_page %}
+            <div class="ui-grid-d ui-corner-all ui-shadow" style="padding:5px;">
+                <div class="ui-block-a my-breakpoint-for-equal-width">
+                    <label class='ui-body'>批量操作：</label>
+                </div>
+                <div class="ui-block-b my-breakpoint-for-equal-width">
+                    <a href="#" id="select_all" data-role="button" class="ui-btn-inline" data-ajax='false'>全选</a>
+                </div>
+                <div class="ui-block-c my-breakpoint-for-equal-width">
+                    <a href="#" id="batch_sign" data-role="button" class="ui-btn-inline" data-ajax='false'>客户签名</a>
+                </div>
+                <div class="ui-block-d my-breakpoint-for-equal-width">
+                    <a href="#" id="batch_temporary_sign" data-role="button" class="ui-btn-inline" data-ajax='false'>客户临时签名(稍后补充信息)</a>
+                </div>
+            </div>
+
+            <table data-role="table" id="tbl_billlist" class="my-breakpoint-for-two-columns ui-corner-all ui-shadow">
+                <thead>
+                <tr>
+                    <th>
+                        单号
+                    </th>
+                    <th style="white-space:nowrap">
+                        将被批量操作
+                    </th>
+                    <th>
+                        发件人
+                    </th>
+                    <th>
+                        收件人
+                    </th>
+                    <th>物品清单</th>
+                    <th>保险金额</th>
+                    <th>
+                        状态
+                    </th>
+                    <th>
+                        磅数
+                    </th>
+                    <th>
+                        操作
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for bill in bills_in_one_page %}
+                    <tr>
+                        <td style="vertical-align:top">
+                            <div>
+                                {{ bill.bill_number }}</div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>
+                                <input type="checkbox" data-role="flipswitch" data-on-text="是" data-off-text="否"
+                                       for="batch_operations"
+                                       value="{{ bill.bill_number }}" data-bill-status-code="{{ bill.status_code }}">
+                            </div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>
+                                {{ bill.sender_district }}, {{ bill.user.username }}, {{ bill.sender_name }},{{ bill.sender_phone }}, {{ bill.sender_address }},{{ bill.sender_post_code }}</div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>
+                                {{ bill.receiver_name }}</div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>{{ bill.item_1_description }}：{{ bill.item_1_quantity }}
+                                {% if bill.item_2_description != '' %}
+                                    ；　{{ bill.item_2_description }}：{{ bill.item_2_quantity }}
+                                {% endif %}
+                                {% if bill.item_3_description != '' %}
+                                    ；　{{ bill.item_3_description }}：{{ bill.item_3_quantity }}
+                                {% endif %}
+                                {% if bill.item_4_description != '' %}
+                                    ；　{{ bill.item_4_description }}：{{ bill.item_4_quantity }}
+                                {% endif %}
+                                {% if bill.item_5_description != '' %}
+                                    ；　{{ bill.item_5_description }}：{{ bill.item_5_quantity }}
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if bill.package_lost_insured_amount > 0 %}
+                                <div style="color:red;">
+                                    <strong>
+                                        {{ bill.package_lost_insured_amount }}
+                                    </strong>
+                                </div>
+                            {% else %}
+                                <div>
+                                    {{ bill.package_lost_insured_amount }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>
+                                {{ bill.status_description }}</div>
+                        </td>
+                        <td style="vertical-align:top;">
+                            {% if bill.status_code == 'A' %}
+                                <div>
+                                    <input type="text" name="weight_lb"
+                                           my_data_bill_number="{{ bill.bill_number }}"
+                                           data-rule-number="true"
+                                           data-rule-min="0.01"
+                                           data-rule-required="true"
+                                           data-msg-number="请输入一个数字。"
+                                           data-msg-required="请输入磅数。"
+                                           data-msg-min="请输入一个大于０的数字。"
+                                           value="{{ bill.weight_lb|default_if_none:'' }}"/>
+                                </div>
+                            {% else %}
+                                <div>
+                                    <label class='ui-body'>{{ bill.weight_lb }}</label>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td style="vertical-align:top;white-space: nowrap">
+                            <div>
+                                <a style="display: inline-block"
+                                   href="/billinput/?bill_number={{ bill.bill_number }}&next={{ request.get_full_path|urlencode }}"
+                                   data-role="button"
+                                   data-ajax="false" class='ui-btn-inline' target="_self">修改快递单</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div data-role="footer">
+                <table style="width: 100%;">
+                    <tr>
+                        <td style="width: 33%;text-align: left;">{% if bills_in_one_page.has_previous %}
+                            <a data-ajax="false"
+                               href="javascript:window.location.href=window.location.href + '&page_number_to_show={{ bills_in_one_page.previous_page_number }}'"
+                               class="ui-btn ui-corner-all ui-btn-inline ui-mini ui-btn-icon-left ui-icon-carat-l">上一页</a>
+                        {% endif %}</td>
+                        <td style="width: 33%;text-align: center;">
+                            当前页：{{ bills_in_one_page.number }} / {{ bills_in_one_page.paginator.num_pages }}
+                        </td>
+                        <td style="width: 33%;text-align: right;">{% if bills_in_one_page.has_next %}
+                             <a data-ajax="false" href="javascript:window.location.href=window.location.href + '&page_number_to_show={{ bills_in_one_page.next_page_number }}'"
+                                class="ui-btn ui-corner-all ui-btn-inline ui-mini ui-btn-icon-right ui-icon-carat-r">下一页</a>
+                        {% endif %}</td>
+                    </tr>
+                </table>
+            </div>
+            <!--show the batch operation menu at the end of the page if the screen is narrow-->
+            <div class="ui-grid-d ui-corner-all ui-shadow display_when_screen_is_narrow" style="padding:5px;">
+                <div class="ui-block-a my-breakpoint-for-equal-width">
+                    <label class='ui-body'>批量操作：</label>
+                </div>
+                <div class="ui-block-b my-breakpoint-for-equal-width">
+                    <a href="#" id="select_all2" data-role="button" class="ui-btn-inline" data-ajax='false'>全选</a>
+                </div>
+                <div class="ui-block-c my-breakpoint-for-equal-width">
+                    <a href="#" id="batch_sign2" data-role="button" class="ui-btn-inline" data-ajax='false'>客户签名</a>
+                </div>
+                <div class="ui-block-d my-breakpoint-for-equal-width">
+                    <a href="#" id="batch_temporary_sign2" data-role="button" class="ui-btn-inline" data-ajax='false'>客户临时签名(稍后补充信息)</a>
+                </div>
+            </div>
+        {% endif %}
+        {% if not bills_in_one_page %}
+            <div data-role="header">没有数据符合您的查询条件。</div>
+        {% endif %}
+    </div>
+
+
+    </div>
+</form>
+<script>
+
+    function collect_bill_numbers_batch() {
+        var bill_numbers_batch = "";
+        $("[for='batch_operations']").each(
+                function (index) {
+                    if ($(this).prop('checked') == true)
+                        if (bill_numbers_batch == "")
+                            bill_numbers_batch = $(this).val();
+                        else {
+                            bill_numbers_batch = bill_numbers_batch + "," + $(this).val();
+                        }
+
+                });
+        return bill_numbers_batch;
+    }
+
+    function collect_status_codes() {
+        var status_codes = "";
+        $("[for='batch_operations']").each(
+                function () {
+                    if ($(this).prop('checked') == true)
+                        if (status_codes == "")
+                            status_codes = $(this).attr('data-bill-status-code');
+                        else {
+                            status_codes = status_codes + "," + $(this).val();
+                        }
+
+                });
+        return status_codes;
+    }
+
+
+    $(window).load(function () {
+        $("form").validate({
+            errorPlacement: function (error, element) {
+                err_div = element.parent().next("div.error_msg");
+                if (err_div.length > 0)
+                //If the error div already exists, just replace the inner text with the new error message.
+                    err_div.text(error.text());
+                else
+                //Create a new div after the textbox.
+                    $("<div class='error_msg'></div>").text(error.text()).insertAfter(element.parent());
+            },
+            unhighlight: function(element, errorClass, validClass)  {
+                err_div = $(element).parent().next("div.error_msg");
+                if (err_div.length > 0)
+                //If the error div already exists, remove it.
+                    err_div.remove();
+            }
+        });
+
+        //Attach the search function to the search button
+        $("#btn_search").click(
+                function () {
+                    window.location.href = "/adminpickuppackages/?status_code_to_search=" + $("#status_code_to_search").val()
+                    + "&bill_number_to_search=" + $("#bill_number_to_search").val() + "&user_name_to_search=" + $("#user_name_to_search").val()
+                    + "&update_time_to_search=" + $("#update_time_to_search").val();
+                }
+        );
+
+
+        //Attache the change all batch operation flip switches event to "Select All" and "Deselect All".
+        $("#select_all,#select_all2").click(
+                function () {
+                    if ($(this).text() == '全选') {
+                        $("[for='batch_operations']").prop('checked', true);
+                        $("[for='batch_operations']").flipswitch("refresh");
+                        $(this).text('全不选')
+                    } else {
+                        $("[for='batch_operations']").prop('checked', false);
+                        $("[for='batch_operations']").flipswitch("refresh");
+                        $(this).text('全选')
+                    }
+                }
+        )
+
+        //This function is going to display the total number of packages and weight and let the client confirm.
+        //This function will be called before the user is navigated to the signature page.
+        function confirm_total_numbers() {
+            var total_number_of_packages = 0, total_weight = 0;
+
+            $("[for='batch_operations']").each(
+                    function (index) {
+                        if ($(this).prop('checked') == true) {
+                            total_number_of_packages++;
+                            total_weight += parseFloat($(this).closest("tr").eq(0).find("[name='weight_lb']").eq(0).val());
+                        }
+                    });
+            return window.confirm("请确认您的包裹总数及磅数是否正确：\n\n　包裹总数： "
+                + total_number_of_packages + " 个"
+                + "\n　总磅数： " + total_weight + " 磅");
+        }
+
+        //This function will be called when the user clicks the Batch Signature button.
+        function navigate_to_signature_pad(status_code_to_be) {
+            var bill_numbers_batch_value = collect_bill_numbers_batch();
+            if (bill_numbers_batch_value == "") {
+                alert("请先选择一些快递单，然后再进行此操作．");
+                return;
+            }
+
+            //Check whether the weight numbers of selected bills are valid.
+            if (!$("[for='batch_operations']:checked").closest("tr").find("input").valid()) {
+                alert("页面上的磅数还有一些错误，请修正以后再提交。");
+                return;
+            }
+
+            status_codes = collect_status_codes();
+            if (status_codes.indexOf('B') >= 0 || status_codes.indexOf('B1') >= 0) {
+                alert("您的选择中有些快递单已经被签名了，请取消选择那些已经签名的快递单，然后再提交。");
+                return;
+            }
+
+            //If the user finds an error in the number of packages and weight, then don't continue.
+            if (!confirm_total_numbers()){
+                return;
+            }
+
+            //Validate whether all bill numbers belong to one user
+            $.ajax(
+                    {
+                        url: "/allbillssameuser/",
+                        method: "GET",
+                        data: {bill_numbers_batch: bill_numbers_batch_value}
+                    }
+            ).done(
+                    function (data) {
+
+                        if (data.result == 'True') {//All bill numbers belong to only one user
+                            //Navigate to the signature page
+                            window.location.href = "/signaturepad/?bill_numbers_batch=" + bill_numbers_batch_value
+                            + "&status_code_to_be=" + status_code_to_be + "&next=" + "/adminpickuppackages/?user_name_to_search=" + data.username;
+                        } else {
+                            alert("您选择的批量操作的快递单不属于同一个用户，请核对后再提交批量签名！");
+                        }
+                    }).fail(
+                    function () {
+                        alert("系统出现错误，请再试一次！");
+                    }
+            )
+        }
+
+
+        //Attach the batch signing event to the "Batch Sign" button
+        $("#batch_sign, #batch_sign2").click(
+                function (){
+                    navigate_to_signature_pad('B');
+                }
+        );
+
+        //Attach the batch signing event to the "Batch Temporary Sign" button
+        $("#batch_temporary_sign, #batch_temporary_sign2").click(
+                function () {
+                    navigate_to_signature_pad('B1');
+                }
+        )
+
+        //Change the background color to red and round to 2 decimals after modifying the weight
+        $("[name='weight_lb']").on('change',
+                function () {
+                    $(this).css('background-color', 'red');
+                    //Use JQuery Validate to validate the input value first.
+                    if ($(this).valid()) {
+                        $(this).val(parseFloat($(this).val()).toFixed(2));//Convert the input value to two decimals
+                    }
+                }
+        );
+
+        //Attache the update weight function to the focusout event of the weight textbox
+        $("[name='weight_lb']").on('focusout',
+                function () {
+                    //Find the textbox' value before this button
+
+                    if ($(this).valid()) {
+                        //Pop up the loader widget before ajax request.
+                        $.mobile.loading("show", {
+                            text: "正在更新中，请稍等...",
+                            textVisible: true,
+                            theme: "b",
+                            html: ""
+                        });
+
+                        text_box = $(this);
+
+                        $.ajax(
+                                {
+                                    url: "/updateweight/",
+                                    method: "POST",
+                                    data: {bill_number: $(this).attr('my_data_bill_number'), weight_lb: $(this).val()}
+                                }
+                        ).done(function (data) {
+                                    $.mobile.loading("hide");//Close the loader widget
+                                    if (data.status == 'success') {
+                                        text_box.css('background-color', "");
+                                    }
+                                    else
+                                        alert("更新失败!请确认您填写的数据是一个正数!");
+                                }
+                        ).fail(function () {
+                                    $.mobile.loading("hide");//Close the loader widget
+                                    alert("更新失败!请确认您填写的数据是一个正数!");
+                                }
+                        );
+                    }
+                }
+        );
+    });
+
+    //For configuring CSRF for Django
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // using jQuery
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+
+    function include_csrf(xhr, settings) {
+        csrftoken = getCookie('csrftoken');
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            csrftoken = getCookie('csrftoken');
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    //<<<<<<<<<<<The CSRF configuration ends here<<<<<<<<<<<<<<
+</script>
+
+
+</body>
+</html>

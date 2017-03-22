@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<style>
+    td {
+        text-align: center;
+        vertical-align: middle;
+    }
+</style>
+
+<form>
+    <div style="width:100%">
+        {% for bill in all_bills %}
+            <table style="width: 100%;margin-bottom: 70px">
+                <tr>
+                    <td style="text-align: center;margin-bottom: 70px;">
+                        <div style="width:100%;text-align: center">{{ bill.bill_number }}</div>
+                        <img src="http://www.fastontime.com/cgi-bin/GInfo.dll?BarCode&ccode={{ bill.bill_number }}&ih=85&iw=265&ntype=0"
+                             style="width: 300px;height:auto;"/>
+                    </td>
+                    <td style="white-space: nowrap">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                    <td style="text-align: center;margin-bottom: 70px;">
+                        <div style="width: 100%;text-align: center">{{ bill.bill_number }}</div>
+                        <img src="http://www.fastontime.com/cgi-bin/GInfo.dll?BarCode&ccode={{ bill.bill_number }}&ih=85&iw=265&ntype=0"
+                             style="width: 300px;height:auto;"/>
+                    </td>
+                    <td style="white-space:nowrap;text-align: center;margin-bottom: 30px;vertical-align: middle;font-size:1.5em">
+                        　<!--There is a Chinese character space before this tag><-->&nbsp;&nbsp;&nbsp;&nbsp;口岸
+                    </td>
+                    <td>
+                        <div style="width: 190px;height:80px;border: 1px solid black"></div>
+                    </td>
+                </tr>
+            </table>
+            <!--Break the page on every fourth bill-->
+            {% if forloop.counter|divisibleby:8 %}
+                <div style="page-break-before: always"></div>
+            {% endif %}
+
+        {% endfor %}
+    </div>
+</form>
+</body>
+</html>

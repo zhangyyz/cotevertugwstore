@@ -1,0 +1,133 @@
+{% load staticfiles %}
+<div class="middle_content">
+
+
+    <img src="{% static 'gwstore/img/fastontimelogo.jpg' %}" style="width: 100%"/>
+
+    <div class="my-nav-bar">
+        <div class="my-nav-tab"><a href="/" data-ajax="false" target="_self" class="ui-btn ui-btn-active">包装要求</a></div>
+        <div class="my-nav-tab"><a href="/helpeachother/" data-ajax="false" target="_self" class="ui-btn">代购互助</a></div>
+        <div class="my-nav-tab"><a href="/billinput/" data-ajax="false" target="_self" class="ui-btn">创建快递单</a></div>
+        <div class="my-nav-tab"><a href="/billlist/" data-ajax="false" target="_self" class="ui-btn">我的快递单</a></div>
+        {% if request.user.is_authenticated %}
+            <!-- user is logged in-->
+            {% if request.user.is_superuser %}
+                <!-- user is an admin-->
+                <div class="my-nav-tab">
+                    <a id="btn_admin_menu" href="#" data-ajax="false" target="_self"
+                       class="ui-btn">管理员菜单</a>
+                    <ul id="submenu_admin_menu" class='my-sub-menu' style="display:none" data-shadow="false"
+                        data-inset="true" data-corners="false">
+                        <li><a href="/adminpickuppackages/?status_code_to_search=A&update_time_to_search=7"
+                               class='ui-btn'
+                               style="text-align: right;"
+                               data-ajax="false">收货</a>
+                        </li>
+                        <li><a id="link_to_admincollectinfo" href="/admincollectinfo/?status_code_to_search=B"
+                               class='ui-btn'
+                               style="text-align: right;"
+                               data-ajax="false">统计快递单</a>
+                            <script>
+                                $(document).ready(function () {
+                                            var today = new Date();
+                                            formatted_date = today.toISOString().substring(0, 10);
+                                            href_value = $("#link_to_admincollectinfo").prop("href") + "&from_pickup_date_to_search=" + formatted_date;
+                                            $("#link_to_admincollectinfo").prop("href", href_value);
+                                        }
+                                );
+
+                            </script>
+                        </li>
+                        <li><a href="/htmleditor/?for_component=Home Page" class='ui-btn' style="text-align: right;"
+                               data-ajax="false">修改主页</a></li>
+                        <li><a href="/htmleditor/?for_component=Help Each Other" class='ui-btn'
+                               style="text-align: right;"
+                               data-ajax="false">修改互助页</a>
+                        </li>
+                    </ul>
+                </div>
+
+
+                <div class="my-nav-tab">
+                    <a id="btn_change_account" href="#" data-ajax="false" target="_self"
+                       class="ui-btn">帐户修改</a>
+                    <ul id="submenu_change_account" class='my-sub-menu' style="display:none" data-shadow="false"
+                        data-inset="true" data-corners="false">
+                        <li><a href="/changeaccount/?changepassword=true" class='ui-btn' style="text-align: right;"
+                               data-ajax="false">更改密码</a></li>
+                        <li><a href="/changeaccount/?changeemail=true" class='ui-btn' style="text-align: right;"
+                               data-ajax="false">更改Email</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="my-nav-tab"><a href="/logoff/" data-ajax="false" target="_self" class="ui-btn">退出系统</a>
+                </div>
+            {% else %}
+                <!--user logged in, but he is a normal user-->
+                <div class="my-nav-tab">
+                    <a id="btn_change_account" href="#" data-ajax="false" target="_self"
+                       class="ui-btn">帐户修改</a>
+                    <ul id="submenu_change_account" class='my-sub-menu' style="display:none" data-shadow="false"
+                        data-inset="true" data-corners="false">
+                        <li><a href="/changeaccount/?changepassword=true" class='ui-btn' style="text-align: right;"
+                               data-ajax="false">更改密码</a></li>
+                        <li><a href="/changeaccount/?changeemail=true" class='ui-btn' style="text-align: right;"
+                               data-ajax="false">更改Email</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="my-nav-tab"><a href="/logoff/" data-ajax="false" target="_self" class="ui-btn">退出系统</a>
+                </div>
+            {% endif %}
+        {% else %}
+            <!--user didn't log in-->
+            <div class="my-nav-tab"><a href="/login/" data-ajax="false" target="_self" class="ui-btn">登录</a></div>
+            <div class="my-nav-tab"><a href="/newuser/" data-ajax="false" target="_self" class="ui-btn">注册</a></div>
+        {% endif %}
+
+    </div>
+</div>
+<script>
+    $(document).ready(
+            function () {
+                //Add the expand / collapse function to the change account button
+                $("#btn_change_account").on('click',
+                        function () {
+                            if ($("#submenu_change_account").is(":visible")) //Currently, it is the plus sign
+                            {
+                                $("#submenu_change_account").hide();
+                            } else {
+                                $("#submenu_change_account").show();
+                            }
+                        }
+                )
+
+                //Add the expand / collapse function to the bill management button
+                $("#btn_admin_menu").on('click',
+                        function () {
+                            if ($("#submenu_admin_menu").is(":visible")) //Currently, it is the plus sign
+                            {
+                                $("#submenu_admin_menu").hide();
+                            } else {
+                                $("#submenu_admin_menu").show();
+                            }
+                        }
+                )
+            }
+    )
+
+    //Highlight the tab which matches with the current url.
+    $(".my-nav-bar a").each(function () {
+                $(this).removeClass('ui-btn-active');
+                if (window.location.href.indexOf($(this).prop('href')) >= 0)
+                    $(this).addClass('ui-btn-active');
+
+                //For the home tab, we need to deal with it with a special logic
+                if ($(this).prop('href') == window.location.protocol + "//" + window.location.hostname + "/")
+                    if ($(this).prop('href') == window.location.href)
+                        $(this).addClass('ui-btn-active');
+                    else
+                        $(this).removeClass('ui-btn-active');
+            }
+    );
+</script>

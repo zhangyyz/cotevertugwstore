@@ -1,0 +1,540 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1">
+    <title>统计快递单</title>
+</head>
+<body>
+<style>
+    .middle_content .ui-title {
+        margin-left: auto !important; /*Remove the margin in the ui-header so that the text will not be cut*/
+        margin-right: auto !important; /*Remove the margin in the ui-header so that the text will not be cut*/
+    }
+
+    .error_msg {
+        font-size: 0.8em;
+        padding-bottom: 0.5em;
+        white-space: normal;
+        color: red;
+    }
+
+    /*Remove the left padding from the labels so that they can be aligned to the left side.*/
+    label.ui-body {
+        padding-left: 0px;
+    }
+</style>
+
+
+<link rel="stylesheet" href="{% static 'gwstore/css/my_breakpoint_and_common_style.css' %}"/>
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"/>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<script src="http://cdn.jsdelivr.net/jquery.validation/1.15.0/jquery.validate.min.js"></script>
+
+{% include 'gwstore/navbar.html' %}
+<form data-ajax="false">
+    {% csrf_token %}
+    <div class="middle_content">
+        <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+            <div class="ui-block-a my-breakpoint-for-two-columns">
+                <label class='ui-body'>收货日期：</label>
+            </div>
+            <div class="ui-block-b my-breakpoint-for-two-columns">
+                <div class="ui-grid-a ui-responsive">
+                    <div class="ui-block-a ui-responsive">
+                        <table>
+                            <tr>
+
+                                <td>
+                                    <input id="from_pickup_date_to_search" 　name="from_pickup_date_to_search"
+                                           data-rule-mydateformat='true'
+                                           type="text"
+                                           value="{{ request.GET.from_pickup_date_to_search|default_if_none:'' }}">
+                                <td style="font-size:0.7em;">(yyyy-mm-dd)</td>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="ui-block-b ui-responsive">
+                        <table>
+                            <tr>
+                                <td> ～</td>
+                                <td><input id="to_pickup_date_to_search" name="to_pickup_date_to_search"
+                                           data-rule-mydateformat='true'
+                                           type="text"
+                                           value="{{ request.GET.to_pickup_date_to_search|default_if_none:'' }}">
+                                <td style="font-size:0.7em;">(yyyy-mm-dd)</td>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui-block-a my-breakpoint-for-two-columns">
+                <label class='ui-body'>取货员：</label>
+            </div>
+            <div class="ui-block-b my-breakpoint-for-two-columns">
+                <select id="pickup_person_to_search" name="pickup_person_to_search">
+                    <option value=""
+                            {% if request.GET.pickup_person_to_search == '' or request.GET.pickup_person_to_search == None %}
+                            selected {% endif %}>全部
+                    </option>
+                    {% for pickup_person in all_pickup_persons %}
+                        <option value="{{ pickup_person.id }}"
+                                {% if request.GET.pickup_person_to_search == pickup_person.id|slugify %}
+                                selected {% endif %}>
+                            {{ pickup_person.first_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+
+            <div class="ui-block-a my-breakpoint-for-two-columns">
+                <label class='ui-body'>包裹状态：</label>
+            </div>
+            <div class="ui-block-b my-breakpoint-for-two-columns">
+                <select id="status_code_to_search" name="status_code_to_search">
+                    <option value=""
+                            {% if request.GET.status_code_to_search != 'A' and request.GET.status_code_to_search != 'B' %}
+                            selected {% endif %}>全部
+                    </option>
+                    <option value="A" {% if request.GET.status_code_to_search == 'A' %} selected {% endif %}>
+                        尚未取货
+                    </option>
+                    <option value="B" {% if request.GET.status_code_to_search == 'B' %} selected {% endif %}>
+                        已经取货
+                    </option>
+                    <option value="B1" {% if request.GET.status_code_to_search == 'B1' %} selected {% endif %}>
+                        已经取货,但快递单信息不完整
+                    </option>
+                </select>
+            </div>
+
+
+            <div class="ui-block-a my-breakpoint-for-two-columns"></div>
+            <div class="ui-block-b my-breakpoint-for-two-columns"><span style="float:right"><a href="#" id="btn_search"
+                                                                                               class="ui-btn ui-btn-inline ui-corner-all">搜索</a>
+                                                                                                   </span>
+            </div>
+        </div>
+
+        {% if bills_in_one_page %}
+            <div class="ui-grid-d ui-corner-all ui-shadow my-breakpoint-for-more-than-two-columns" style="padding:5px;">
+                <div class="ui-block-a my-breakpoint-for-equal-width">
+                    <label class='ui-body'>批量操作：</label>
+                </div>
+                <div class="ui-block-b my-breakpoint-for-equal-width">
+                    <a href="#" id="select_all" data-role="button" class="ui-btn-inline" data-ajax='false'>全选</a>
+                </div>
+                <div class="ui-block-c my-breakpoint-for-equal-width">
+                    <a href="#" id="batch_download_bills_excel" data-role="button" class="ui-btn-inline"
+                       data-ajax='false'>批量下载Excel格式快递单</a>
+                </div>
+                <div class="ui-block-c my-breakpoint-for-equal-width">
+                    <a href="#" id="batch_download_bills_pdf" data-role="button" class="ui-btn-inline"
+                       data-ajax='false'>批量下载PDF格式快递单</a>
+                </div>
+                <div class="ui-block-c my-breakpoint-for-equal-width">
+                    <a href="#" id="batch_download_barcodes" data-role="button" class="ui-btn-inline"
+                       data-ajax='false'>批量下载条形码</a>
+                </div>
+            </div>
+
+            <div data-role="header" class="ui-corner-all">
+                <h1>总件数：{{ total_number_of_packages }}, &nbsp; 总磅数：{{ total_weight }}</h1>
+            </div>
+
+            <table data-role="table" id="tbl_billlist" class="my-breakpoint-for-two-columns ui-corner-all ui-shadow">
+                <thead>
+                <tr>
+                    <th>
+                        单号
+                    </th>
+                    <th style="white-space:nowrap">
+                        将被批量操作
+                    </th>
+                    <th>
+                        发件人
+                    </th>
+                    <th>
+                        收件人
+                    </th>
+                    <th>物品清单</th>
+                    <th>保险金额</th>
+                    <th>
+                        状态
+                    </th>
+                    <th>
+                        取货日期
+                    </th>
+                    <th>
+                        取货员
+                    </th>
+                    <th>
+                        磅数
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for bill in bills_in_one_page %}
+                    <tr>
+                        <td style="vertical-align:top">
+                            <div>
+                                {{ bill.bill_number }}</div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>
+                                <input type="checkbox" data-role="flipswitch" data-on-text="是" data-off-text="否"
+                                       for="batch_operations"
+                                       value="{{ bill.bill_number }}" data-bill-status-code="{{ bill.status_code }}">
+                            </div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>{{ bill.sender_name }}，{{ bill.sender_district }}</div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>
+                                {{ bill.receiver_name }}，{{ bill.receiver_address }}</div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>{{ bill.item_1_description }}：{{ bill.item_1_quantity }}
+                                {% if bill.item_2_description != '' %}
+                                    ；　{{ bill.item_2_description }}：{{ bill.item_2_quantity }}
+                                {% endif %}
+                                {% if bill.item_3_description != '' %}
+                                    ；　{{ bill.item_3_description }}：{{ bill.item_3_quantity }}
+                                {% endif %}
+                                {% if bill.item_4_description != '' %}
+                                    ；　{{ bill.item_4_description }}：{{ bill.item_4_quantity }}
+                                {% endif %}
+                                {% if bill.item_5_description != '' %}
+                                    ；　{{ bill.item_5_description }}：{{ bill.item_5_quantity }}
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if bill.package_lost_insured_amount > 0 %}
+                                <div style="color:red;">
+                                    <strong>
+                                        {{ bill.package_lost_insured_amount }}
+                                    </strong>
+                                </div>
+                            {% else %}
+                                <div>
+                                    {{ bill.package_lost_insured_amount }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>
+                                {{ bill.status_description }}</div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>
+                                {{ bill.pickup_time|date:"Y-m-d" }}</div>
+                        </td>
+                        <td style="vertical-align:top">
+                            <div>
+                                {% if bill.pickup_person %}
+                                    {{ bill.pickup_person.first_name }}
+                                {% else %}
+                                    尚未取货
+                                {% endif %}
+
+                            </div>
+                        </td>
+                        <td style="vertical-align:top;">
+                            <div>
+                                {{ bill.weight_lb|default_if_none:'未填写' }}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div data-role="footer">
+                <table style="width: 100%;">
+                    <tr>
+                        <td style="width: 33%;text-align: left;">{% if bills_in_one_page.has_previous %}
+                            <a data-ajax="false"
+                               href="javascript:window.location.href=window.location.href + '&page_number_to_show={{ bills_in_one_page.previous_page_number }}'"
+                               class="ui-btn ui-corner-all ui-btn-inline ui-mini ui-btn-icon-left ui-icon-carat-l">上一页</a>
+                        {% endif %}</td>
+                        <td style="width: 33%;text-align: center;">
+                            当前页：{{ bills_in_one_page.number }} / {{ bills_in_one_page.paginator.num_pages }}
+                        </td>
+                        <td style="width: 33%;text-align: right;">{% if bills_in_one_page.has_next %}
+                             <a data-ajax="false" href="javascript:window.location.href=window.location.href + '&page_number_to_show={{ bills_in_one_page.next_page_number }}'"
+                                class="ui-btn ui-corner-all ui-btn-inline ui-mini ui-btn-icon-right ui-icon-carat-r">下一页</a>
+                        {% endif %}</td>
+                    </tr>
+                </table>
+            </div>
+        {% endif %}
+        {% if not bills_in_one_page %}
+            <div data-role="header">没有数据符合您的查询条件。</div>
+        {% endif %}
+    </div>
+
+
+    </div>
+</form>
+<script>
+
+    function collect_bill_numbers_batch() {
+        var bill_numbers_batch = "";
+        $("[for='batch_operations']").each(
+                function (index) {
+                    if ($(this).prop('checked') == true)
+                        if (bill_numbers_batch == "")
+                            bill_numbers_batch = $(this).val();
+                        else {
+                            bill_numbers_batch = bill_numbers_batch + "," + $(this).val();
+                        }
+
+                });
+        return bill_numbers_batch;
+    }
+
+
+    function collect_status_codes() {
+        var status_codes = "";
+        $("[for='batch_operations']").each(
+                function () {
+                    if ($(this).prop('checked') == true)
+                        if (status_codes == "")
+                            status_codes = $(this).attr('data-bill-status-code');
+                        else {
+                            status_codes = status_codes + "," + $(this).val();
+                        }
+
+                });
+        return status_codes;
+    }
+
+    $(window).load(function () {
+        $.validator.addMethod(
+                "mydateformat",
+                function (value, element, check) {
+                    if (check != 'true' && check != true || this.optional(element))
+                        return true;
+
+                    Date.prototype.isValid = function () {
+                        // An invalid date object returns NaN for getTime() and NaN is the only
+                        // object not strictly equal to itself.
+                        return this.getTime() === this.getTime();
+                    };
+                    d = new Date(value);
+                    return d.isValid() && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+                },
+                "请确认您输入的日期是正确的，日期格式为YYYY-MM-DD"
+        );
+
+        $("form").validate({
+
+            errorPlacement: function (error, element) {
+                err_div = element.parent().next("div.error_msg");
+                if (err_div.length > 0)
+                //If the error div already exists, just replace the inner text with the new error message.
+                    err_div.text(error.text());
+                else
+                //Create a new div after the textbox.
+                    $("<div class='error_msg'></div>").text(error.text()).insertAfter(element.parent());
+            },
+
+            unhighlight: function(element, errorClass, validClass)  {
+                err_div = $(element).parent().next("div.error_msg");
+                if (err_div.length > 0)
+                //If the error div already exists, remove it.
+                    err_div.remove();
+            }
+        });
+
+        //Attach the search function to the search button
+        $("#btn_search").click(
+                function () {
+                    window.location.href = "/admincollectinfo/?from_pickup_date_to_search=" + $("#from_pickup_date_to_search").val()
+                    + "&to_pickup_date_to_search=" + $("#to_pickup_date_to_search").val() + "&pickup_person_to_search=" + $("#pickup_person_to_search").val() + "&status_code_to_search=" + $("#status_code_to_search").val();
+                }
+        );
+
+
+        //Attache the change all batch operation flip switches event to "Select All" and "Deselect All".
+        //Attache the change all batch operation flip switches event to "Select All" and "Deselect All".
+        $("#select_all").click(
+                function () {
+                    if ($(this).text() == '全选') {
+                        $("[for='batch_operations']").prop('checked', true);
+                        $("[for='batch_operations']").flipswitch("refresh");
+                        $(this).text('全不选')
+                    } else {
+                        $("[for='batch_operations']").prop('checked', false);
+                        $("[for='batch_operations']").flipswitch("refresh");
+                        $(this).text('全选')
+                    }
+                }
+        )
+
+
+        //This function will be called when the user clicks the Batch Download Bills Excel button.
+        function batch_download_bills_excel() {
+
+            var bill_numbers_batch_value = collect_bill_numbers_batch();
+            if (bill_numbers_batch_value == "") {
+                alert("请先选择一些快递单，然后再进行此操作．");
+                return;
+            }
+
+            status_codes = collect_status_codes();
+            if (status_codes.indexOf('A') >= 0 || status_codes.indexOf('B1') >= 0) {
+                if (!window.confirm("您已选择的快递单中，有些没有客户签名或者信息不完整，确定也要把它们一起导出吗？"))
+                    return;
+            }
+
+            //Check whether some bills have already been exported to Excel before.
+            $.ajax(
+                    {
+                        url: "/nobillexportedbefore/",
+                        method: "GET",
+                        data: {bill_numbers_batch: bill_numbers_batch_value}
+                    }
+            ).done(
+                    function (data) {
+
+                        if (data.status == 'success') {//No bill number has been exported before
+                            //Open a new windows for downloading the bills
+                            window.open(window.location.protocol + "//" + window.location.hostname +
+                            "/batchdownloadbillsexcel/?bill_numbers_batch=" + bill_numbers_batch_value)
+                        } else {
+                            if(window.confirm("系统检测到您选择的快递单中有一部分已经被导出过Excel格式了，您确定要把它们再导出一次吗？\n\n已被导出过的快递单号为： " + data.bill_numbers))
+                            {
+                                //Open a new windows for downloading the bills
+                                window.open(window.location.protocol + "//" + window.location.hostname +
+                                "/batchdownloadbillsexcel/?bill_numbers_batch=" + bill_numbers_batch_value)
+                            }
+                        }
+                    }).fail(
+                    function () {
+                        alert("系统出现错误，请再试一次！");
+                    }
+            )
+        }
+
+        //This function will be called when the user clicks the Batch Download Bills PDF button.
+        function batch_download_bills_pdf() {
+
+            var bill_numbers_batch_value = collect_bill_numbers_batch();
+            if (bill_numbers_batch_value == "") {
+                alert("请先选择一些快递单，然后再进行此操作．");
+                return;
+            }
+
+            status_codes = collect_status_codes();
+            if (status_codes.indexOf('A') >= 0 || status_codes.indexOf('B1') >= 0) {
+                if (!window.confirm("您已选择的快递单中，有些没有客户签名或者信息不完整，确定也要把它们一起导出吗？"))
+                    return;
+            }
+
+            //Open a new windows for downloading the bills
+            window.open(window.location.protocol + "//" + window.location.hostname +
+            "/batchdownloadbillspdf/?bill_numbers_batch=" + bill_numbers_batch_value)
+
+        }
+
+        //This function will be called when the user clicks the Batch Download Barcodes button.
+        function batch_download_barcodes() {
+
+            var bill_numbers_batch_value = collect_bill_numbers_batch();
+            if (bill_numbers_batch_value == "") {
+                alert("请先选择一些快递单，然后再进行此操作．");
+                return;
+            }
+
+            status_codes = collect_status_codes();
+            if (status_codes.indexOf('A') >= 0 || status_codes.indexOf('B1') >= 0) {
+                if (!window.confirm("您已选择的快递单中，有些没有客户签名或者信息不完整，确定也要把它们一起导出吗？"))
+                    return;
+            }
+
+            //Open a new windows for downloading the bills
+            window.open(window.location.protocol + "//" + window.location.hostname +
+            "/batchdownloadbarcodes/?bill_numbers_batch=" + bill_numbers_batch_value)
+
+        }
+
+
+        //Attach the batch signing event to the "Batch Download Excel" button
+        $("#batch_download_bills_excel").click(
+                function () {
+                    batch_download_bills_excel();
+                }
+        );
+
+        //Attach the batch signing event to the "Batch Download PDF" button
+        $("#batch_download_bills_pdf").click(
+                function () {
+                    batch_download_bills_pdf();
+                }
+        );
+
+        //Attach the batch signing event to the "Batch Download PDF" button
+        $("#batch_download_barcodes").click(
+                function () {
+                    batch_download_barcodes();
+                }
+        );
+
+    });
+
+    //For configuring CSRF for Django
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // using jQuery
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+
+    function include_csrf(xhr, settings) {
+        csrftoken = getCookie('csrftoken');
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            csrftoken = getCookie('csrftoken');
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    //<<<<<<<<<<<The CSRF configuration ends here<<<<<<<<<<<<<<
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<style>
+    .width_5pc {
+        width: 5%;
+    }
+
+    .width_15pc {
+        width: 15%;
+    }
+
+    .width_20pc {
+        width: 20%;
+    }
+
+    .width_25pc {
+        width: 25%;
+    }
+
+    .width_30pc {
+        width: 30%;
+    }
+
+    .width_35pc {
+        width: 35%;
+    }
+
+    .width_50pc {
+        width: 50%;
+    }
+
+    .width_75pc {
+        width: 75%;
+    }
+
+    .width_80pc {
+        width: 80%;
+    }
+
+    .width_100pc {
+        width: 100%;
+    }
+
+    .left_side {
+        width: 53%;
+        float: left;
+        overflow: hidden;
+    }
+
+    .left_side table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .left_side table td {
+        border-top-width: 1px;
+        border-left-width: 1px;
+        border-right-width: 1px;
+        border-bottom-width: 0px;
+        border-style: solid;
+        border-color: black;
+    }
+
+    .right_side {
+        width: 47%;
+        float: left;
+        overflow: hidden;
+    }
+
+    .right_side table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .whole_bill {
+        width: 900px;
+        height: 610px;
+        margin-left: auto;
+        margin-right: auto;
+        font-size: small;
+        border-bottom-width: 1px;
+        border-bottom-style: solid;
+        border-bottom-color: black;
+        overflow: hidden;
+    }
+
+    .section_title {
+        background-color: #E94F52;
+    }
+
+    .right_side table td {
+        border-top-width: 1px;
+        border-left-width: 1px;
+        border-right-width: 1px;
+        border-bottom-width: 0px;
+        border-style: solid;
+        border-color: black;
+    }
+
+    .cross_box {
+        display: inline-block;
+        border-width: 1px;
+        border-color: black;
+        border-style: solid;
+    }
+
+    .insurance_desc {
+        color: #EC7779;
+    }
+
+    .company_banner {
+        background-color: #F98889;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .bar_code_container {
+        font-size: smaller;
+    }
+	
+	body {
+		font-family:"WenQuanYi Micro Hei";
+	}
+</style>
+<body>
+
+{% for bill in all_bills %}
+<div class="whole_bill" {%cycle 'style="margin-bottom: 90px"' '' %}>
+    <div class="left_side">
+        <table>
+            <tr>
+                <td class="width_75pc"><strong>1. SENDER's ACCOUNT 发件人帐号:</strong></td>
+                <td rowspan="2">
+                    <div style="overflow:hidden;"><img src="http://www.fastontime.com/printlogo.jpg"
+                                                       style="max-width:99%;width:99%;"/></div>
+                </td>
+            </tr>
+            <tr>
+                <td class="width_75pc">{% if bill.pickup_person.first_name == '郭武'%} mguowu {%else%}mwjn{% endif %}</td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="section_title"><strong>2. FROM (SENDER's INFORMATION) 发件人信息</strong></td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="width_20pc">
+                    <div><strong>NAME</strong></div>
+                    <div><strong>寄件人姓名</strong></div>
+                </td>
+                <td>{{ bill.sender_name }}</td>
+                <td>
+                    <div><strong>PHONE</strong></div>
+                    <div><strong>电话</strong></div>
+                </td>
+                <td>{{ bill.sender_phone }}</td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="width_20pc">
+                    <div><strong>ADDRESS</strong></div>
+                    <div><strong>地址</strong></div>
+                </td>
+                <td>{{ bill.sender_address }}</td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="section_title"><strong>3.保险声明</strong></td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="insurance_desc">
+                    <div><strong>如为购买额外保险，本包裹的丢失赔偿上限为加拿大元壹佰元整。本人确认寄件人需承担快递运送途中的内件破损风险。</strong></div>
+                    <div>MAXIMUS LOST COMPENSATION OF THIS PARCEL IS UP TO 100CAD WITHOUT ANY ADDITIONAL INSURANCE. I
+                        AGREED TO TAKE THE RESPONSIBILITY FOR ANY DAMAGE OF THE FRAGILE ITEM(S) IN THIS PARCEL DURING
+                        TRANSIT.
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="section_title"><strong>4.DELIVERY ADDRESS 收件人信息</strong></td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="width_25pc">
+                    <div>NAME</div>
+                    <div>收件人姓名</div>
+                </td>
+                <td>{{ bill.receiver_name }}</td>
+                <td>
+                    <div>PHONE</div>
+                    <div>电话</div>
+                </td>
+                <td>{{ bill.receiver_phone }}</td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="width_25pc">
+                    <div><strong>ADDRESS</strong></div>
+                    <div><strong>收件地址</strong></div>
+                </td>
+                <td> {{ bill.receiver_address }} </td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="width_50pc"></td>
+                <td class="width_20pc">
+                    <div><strong>POST CODE</strong></div>
+                    <div><strong>邮编</strong></div>
+                </td>
+                <td> {{ bill.receiver_post_code }} </td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="section_title">
+                    <div><strong>5.DANGEROUS GOODS(CROSS CORRECT BOX)</strong></div>
+                    <div><strong>&nbsp;&nbsp;危险品(在所选筐内打"X"):</strong></div>
+                </td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td>
+                    <div><strong>本运送货物内是否含有危险品？如果有，请致电我们的客户服务。</strong></div>
+                    <div> DOES THIS CONSIGNMENT CONTAIN ANY DANGEROUS GOODS? IF YES, PLEASE CALL OUR CUSTOMER SERVICE。
+                    </div>
+                    <div><strong>YES 是<span class="cross_box"><span style="visibility:hidden">X</span></span> NO 否 <span
+                            class="cross_box"><span style="visibility:visible;">X</span></span> </strong></div>
+                </td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="section_title"><strong>6. 温馨提示: 购买保险的重要性。 </strong>
+
+                    <div>寄件人应清楚知悉国际运输环节复杂，意外在所难免，购买保险是唯一可以保护自身利益之最好的方法，没有购买保险的货物，一律不赔偿货物本身的价值，只退还运费。</div>
+                    <div><strong>*是否选择购买保险：YES 是<span class="cross_box"><span
+                            style="visibility:{% if bill.buy_package_lost_insurance == 'Yes' %}visible;{% else %} hidden;{% endif %}">X</span></span>
+                        NO 否 <span class="cross_box"><span
+                                style="visibility:{% if bill.buy_package_lost_insurance == 'No' %}visible;{% else %} hidden;{% endif %}">X</span></span></strong><span
+                            class="cross_box"><span style="visibility:hidden;"></span></span></div>
+                </td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td style="padding-bottom:1000px;">
+                    <div><strong>INSURANCE AMOUNT</strong></div>
+                    <div><strong>保险金额: </strong>
+                        {% if bill.package_lost_premium_amount > 0 %}
+                        {{ bill.package_lost_premium_amount }}
+                        {% endif %}
+                    </div>
+                </td>
+                <td style="padding-bottom:1000px;">
+                    <div><strong>DATE (YEAR/MONTH/DAY)</strong></div>
+                    <div><strong> 发件日期(年/月/日): </strong><span>{{ bill.pickup_time|date:"Y/m/d" }}</span></div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="right_side">
+        <table>
+            <tr>
+                <td class="company_banner">
+                    <div>TEL 电话:146-292-6661, 146-292-3331</div>
+                    <div>地址: 17-4188 Finch Avenue East, Scarborough, ON M1S 4T6</div>
+                    <div>EMAIL: INFO@FASTONTIME.COM 网站:WWW.FASTONTIME.COM</div>
+                    <div>营业时间: 周一到周五: 10:00AM - 8:00PM 周六,日:11:00AM-6:00PM</div>
+                </td>
+            <tr>
+        </table>
+        <table>
+            <tr>
+                <td class="bar_code_container" style="text-align:center;">
+                    <div style="overflow:hidden"><img
+                            src="http://www.fastontime.com/cgi-bin/GInfo.dll?BarCode&ccode={{ bill.bill_number }}&ih=85&iw=265&ntype=0"
+                            style="z-index:2;width:70%;height:80%;"/>
+                    </div>
+                    <div><strong>PLEASE QUOTE THIS NUMBER IF YOU HAVE ANY ENQUIRY. </strong></div>
+                    <div><strong>如有任何查询请出示此号码:&nbsp;&nbsp;&nbsp; {{ bill.bill_number }}  </strong></div>
+                </td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td>
+                    <div><strong>7. GOOD DESCRIPTIONS 货物的详细描述</strong></div>
+                </td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="width_50pc">
+                    <div><strong>BRAND GOODS DESCRIPTION</strong></div>
+                    <div><strong>货物品牌描述</strong></div>
+                </td>
+                <td>
+                    <div><strong>DECLARED VALUE</strong></div>
+                    <div><strong>申报价值</strong></div>
+                </td>
+                <td>
+                    <div><strong>QUANTITY</strong></div>
+                    <div><strong>数量</strong></div>
+                </td>
+            </tr>
+            <tr style="height:3em">
+                <td>{{ bill.item_1_description }}</td>
+                <td>&nbsp;</td>
+                <td>{{ bill.item_1_quantity }}</td>
+            </tr>
+            <tr style="height:3em">
+                <td>{{ bill.item_2_description|default_if_none:'' }}</td>
+                <td>&nbsp;</td>
+                <td>{{ bill.item_2_quantity|default_if_none:'' }}</td>
+            </tr>
+            <tr style="height:3em">
+                <td>{{ bill.item_3_description|default_if_none:'' }}</td>
+                <td>&nbsp;</td>
+                <td>{{ bill.item_3_quantity|default_if_none:'' }}</td>
+            </tr>
+            <tr style="height:3em">
+                <td>{{ bill.item_4_description|default_if_none:'' }}</td>
+                <td>&nbsp;</td>
+                <td>{{ bill.item_4_quantity|default_if_none:'' }}</td>
+            </tr>
+            <tr style="height:3em">
+                <td>{{ bill.item_5_description|default_if_none:'' }}</td>
+                <td>&nbsp;</td>
+                <td>{{ bill.item_5_quantity|default_if_none:'' }}</td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="width_50pc">
+                    <div><strong>TOTAL WEIGHT</strong></div>
+                    <div><strong>总重量(LB)</strong></div>
+                </td>
+                <td>{{ bill.weight_lb|default_if_none:'' }} LB</td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <td class="width_50pc">
+                    <div><strong>YOUR SIGNATURE</strong></div>
+                    <div><strong>发件人签名:</strong></div>
+                </td>
+                <td>
+                    <div><strong>RECEIVED BY FASTON(TO BE COMPLETED BY FASTON)</strong></div>
+                    <div><strong>取件员</strong></div>
+                </td>
+            </tr>
+            <tr>
+                <td style="height:4em; padding-bottom:1000px;vertical-align: top;"><img
+                        style="width:{{ bill.client_signature_width }};height:{{ bill.client_signature_height }};"
+                        src="{{ bill.client_signature_data_uri |default_if_none:''}}"/></td>
+                <td style="padding-bottom:1000px;vertical-align: top;font-size:large;text-align: center;">{{ bill.pickup_person.first_name }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+    {% if forloop.counter|divisibleby:2 and not forloop.last%}
+        <!--Break the page on every second bill-->
+        <div style="page-break-before: always;height:1px;" ></div>
+    {% endif %}
+
+{% endfor %}
+</body>
+</html>

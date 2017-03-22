@@ -1,0 +1,193 @@
+{% load staticfiles %}
+<!doctype html>
+<html data-enhance="false">
+<head>
+    <meta charset="utf-8">
+    <title>签名</title>
+    <meta name="description"
+          content="Signature Pad - HTML5 canvas based smooth signature drawing using variable width spline interpolation.">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+    <link rel="stylesheet" href="{% static 'gwstore/css/signature-pad.css' %}">
+    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"/>
+    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+
+</head>
+<body onselectstart="return false">
+<script>
+    //Prevent JQM to enhance this page
+    $(document).on('mobileinit', function () {
+        $.mobile.ignoreContentEnabled = true;
+    });
+</script>
+<form>
+    {% csrf_token %}
+    <input type="hidden" id="bill_numbers_batch" value="{{ request.GET.bill_numbers_batch|default_if_none:'0' }}"/>
+    <input type="hidden" id="status_code_to_be" value="{{ request.GET.status_code_to_be|default_if_none:'B' }}"/>
+    <input type="hidden" id="next" value="{{ request.GET.next|default_if_none:'/' }}"/>
+
+    <div id="signature-pad" class="m-signature-pad">
+        <div class="m-signature-pad--body">
+            <canvas style="box-shadow: 0 0 5px rgba(0, 0, 0, 1) inset"></canvas>
+        </div>
+        <div class="m-signature-pad--footer">
+            <div class="description">
+                <div>请在上面白色区域内签名</div>
+                {% if request.GET.status_code_to_be == 'B1' %}
+                    <div style="color:red">
+                        客户临时签名，稍后补充快递单信息
+                    </div>
+                {% endif %}
+            </div>
+            <button type="button" class="button clear" data-action="clear">清除</button>
+            <button type="button" class="button save" data-action="save">提交</button>
+        </div>
+    </div>
+</form>
+
+<script src="{% static 'gwstore/js/signature_pad.js' %}"></script>
+<script src="{% static 'gwstore/js/trim_signature_blanks.js' %}"></script>
+<script>
+    $(document).ready(
+            function () {
+                var wrapper = document.getElementById("signature-pad"),
+                        clearButton = wrapper.querySelector("[data-action=clear]"),
+                        saveButton = wrapper.querySelector("[data-action=save]"),
+                        canvas = wrapper.querySelector("canvas"),
+                        signaturePad;
+                // Adjust canvas coordinate space taking into account pixel ratio,
+                // to make it look crisp on mobile devices.
+                // This also causes canvas to be cleared.
+                function resizeCanvas() {
+                    // When zoomed out to less than 100%, for some very strange reason,
+                    // some browsers report devicePixelRatio as less than 1
+                    // and only part of the canvas is cleared then.
+                    var ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    canvas.width = canvas.offsetWidth * ratio;
+                    canvas.height = canvas.offsetHeight * ratio;
+                    canvas.getContext("2d").scale(ratio, ratio);
+                }
+
+                window.onresize = resizeCanvas;
+                resizeCanvas();
+
+                signaturePad = new SignaturePad(canvas);
+
+                clearButton.addEventListener("click", function (event) {
+                    signaturePad.clear();
+                });
+
+                //My code for submitting starts here
+                saveButton.addEventListener("click", function (event) {
+                    if (signaturePad.isEmpty()) {
+                        alert("请先签名再提交。");
+                    } else {
+                        //Pop up the loader widget before ajax request.
+                        $("button").prop('disabled', true);
+                        $.mobile.loading("show", {
+                            text: "正在提交中，请稍等...",
+                            textVisible: true,
+                            theme: "b",
+                            html: ""
+                        });
+
+                        signaturePad.removeBlanks();
+                        $.ajax({
+                                    url: "/uploadsignature/",
+                                    method: "POST",
+                                    data: {
+                                        client_signagure_data_uri: signaturePad.toDataURL(),
+                                        bill_numbers_batch: $("#bill_numbers_batch").val(),
+                                        status_code_to_be: $("#status_code_to_be").val()
+                                    }
+                                }
+                        ).done(
+                                function (data) {
+                                    $.mobile.loading("hide");//Close the loader widget
+                                    //Saving succeeded
+                                    if (data.status == "success") {
+                                        //Jump back to the search page to display current bill's status
+                                        window.location.href = $("#next").val();
+                                    }
+
+                                    //Saving failed.
+                                    if (data.status != "success") {
+                                        alert(data.error);
+                                        $("button").prop('disabled', false);//The button was disabled when the loading widget popped up.
+                                    }
+                                }
+                        ).fail(
+                                function () {
+                                    $.mobile.loading("hide");//Close the loader widget
+                                    $("button").prop('disabled', false);
+                                    alert("系统错误，请重试！");
+
+                                }
+                        );
+                    }
+                });
+            }
+    )
+
+
+    $(window).load(
+            function()
+            {
+                //Remove the enhanced buttons by JQM
+                $("button").removeClass("ui-btn").removeClass("ui-shadow").removeClass("ui-corner-all");
+            }
+    )
+
+    //For configuring CSRF for Django
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // using jQuery
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+
+    function include_csrf(xhr, settings) {
+        csrftoken = getCookie('csrftoken');
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            csrftoken = getCookie('csrftoken');
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    //<<<<<<<<<<<The CSRF configuration ends here<<<<<<<<<<<<<<
+</script>
+
+</body>
+</html>

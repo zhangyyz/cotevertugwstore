@@ -1,0 +1,116 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<link rel="stylesheet" href="{% static 'gwstore/css/my_breakpoint_and_common_style.css' %}"/>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet">
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.js"></script>
+<link href="http://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.1/summernote.css" rel="stylesheet">
+<script src="http://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.1/summernote.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"/>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+{% include 'gwstore/navbar.html' %}
+<form>
+    {% csrf_token %}
+    <div class="middle_content">
+        <div id="summernote">Hello Summernote</div>
+        <input type="button" id='btn_submit' value="保存"/>
+        <input type="hidden" name="for_component" id="for_component"
+               value="{{ request.GET.for_component|default_if_none:'' }}"/>
+    </div>
+</form>
+{% csrf_token %}
+<div data-role="popup" id="popup_alert" data-corners="true">
+    <a href="#" data-rel="back" data-role="button" data-icon="delete" data-iconpos="notext"
+       class="ui-btn-right">Close</a>
+
+    <div id="error_content" style="padding: 20px"></div>
+</div>
+<div id="already_saved_html_code" style="display:none;">
+    {{ html_code|safe|default_if_none:'' }}
+</div>
+<script>
+    $(document).ready(function () {
+        $('#summernote').summernote({
+            height: 300,                 // set editor height
+            focus: true                  // set focus to editable area after initializing summernote
+        });
+
+        $('#summernote').summernote('code', $("#already_saved_html_code").html());//Let the editor show the saved html code
+    });
+
+
+    $("#btn_submit").on('click', function () {
+                $.ajax({
+                    url: '/htmleditor/',
+                    method: "POST",
+                    data: {html_code: $('#summernote').summernote('code'), for_component: $("#for_component").val()}
+                }).done(
+                        function (data) {
+                            //Login succeeded
+                            if (data.status == "success") {
+                                alert("保存成功！")
+                            }
+
+                            //Login failed.
+                            if (data.status != "success") {
+                                //Display the error message from Server.
+                                $("#error_content").html(data.error);
+                                $("#popup_alert").popup("open");
+                            }
+                        }
+                )
+            }
+    )
+
+    //For configuring CSRF for Django
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // using jQuery
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+
+    function include_csrf(xhr, settings) {
+        csrftoken = getCookie('csrftoken');
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            csrftoken = getCookie('csrftoken');
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    //<<<<<<<<<<<The CSRF configuration ends here<<<<<<<<<<<<<<
+</script>
+
+</body>
+</html>

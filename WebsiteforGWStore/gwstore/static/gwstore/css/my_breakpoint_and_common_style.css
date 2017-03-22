@@ -1,0 +1,131 @@
+body, input, select, textarea, button, .ui-btn{
+    font-family:  "Microsoft Yahei", "微软雅黑",  STXihei !important;
+}
+
+@media screen and (min-width: 60em) {
+    .my-nav-bar {
+        display: table;
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .my-nav-tab
+    {
+        position:relative; /*This is for passing its width to the sub popped menus*/
+        display:table-cell;
+    }
+
+    .middle_content {
+        width: 60em; /*The content will be wider than the breakpoint, and the user has to use the scroolbar*/
+        margin: auto;
+    }
+
+    .middle_content .my-breakpoint-for-two-columns.ui-block-a {
+        width: 30% !important;
+    }
+
+    .middle_content .my-breakpoint-for-two-columns.ui-block-b {
+        width: 70% !important;
+    }
+
+    /* Show the table header rows and set all cells to display: table-cell */
+    .my-breakpoint-for-two-columns td,
+    .my-breakpoint-for-two-columns th,
+    .my-breakpoint-for-two-columns tbody th,
+    .my-breakpoint-for-two-columns tbody td,
+    .my-breakpoint-for-two-columns thead td,
+    .my-breakpoint-for-two-columns thead th {
+        display: table-cell !important;
+        margin: 0 !important;;
+    }
+
+    /* Hide the labels in each cell */
+    .my-breakpoint-for-two-columns td .ui-table-cell-label,
+    .my-breakpoint-for-two-columns th .ui-table-cell-label {
+        display: none !important;
+    }
+
+     /*Remove the paddings and margins of the buttons and submenues in the nav bar, so that the sub menus can be aligned to their parents.*/
+    .my-sub-menu {
+        position: absolute !important;
+        width: 100%;
+        z-index: 9999;
+        padding: 0px !important;
+        border-style:none !important;
+        border-width: 0px !important;
+        margin:0px !important;
+    }
+    .my-nav-bar .ui-btn {
+        margin: 0px !important;
+    }
+
+    /*Hide or show some menus according to the width of the screen*/
+    .display_when_screen_is_wide{
+        display:block;
+    }
+    .display_when_screen_is_narrow{
+        display:none;
+    }
+
+}
+
+@media screen and (max-width: 60em) {
+    .my-nav-bar {
+        display: block;
+        width: 100%;
+    }
+
+    .my-nav-tab
+    {
+        display:block;
+        width:100%;
+    }
+
+    .middle_content {
+        width: 100%;
+        float: none;
+    }
+
+    .middle_content .my-breakpoint-for-two-columns.ui-block-a,
+    .middle_content .my-breakpoint-for-two-columns.ui-block-b{
+        width: 100% !important;
+    }
+
+    .middle_content .my-breakpoint-for-equal-width.ui-block-a,
+    .middle_content .my-breakpoint-for-equal-width.ui-block-b,
+    .middle_content .my-breakpoint-for-equal-width.ui-block-c,
+    .middle_content .my-breakpoint-for-equal-width.ui-block-d,
+    .middle_content .my-breakpoint-for-equal-width.ui-block-e{
+        width: 100% !important;
+    }
+
+    [data-role='navbar']  .ui-block-a,
+    [data-role='navbar']  .ui-block-b,
+    [data-role='navbar']  .ui-block-c,
+    [data-role='navbar']  .ui-block-d,
+    [data-role='navbar']  .ui-block-e {
+        width: 100% !important;
+    }
+
+    /*Remove the paddings and margins of the buttons and submenues in the nav bar, so that the sub menus can be aligned to their parents.*/
+    .my-sub-menu {
+        position: relative !important;/*In the mobile mode, the sub menu should take some place in the stack*/
+        width: 100%;
+        padding: 0px !important;
+        border-style:none !important;
+        border-width: 0px !important;
+        margin:0px !important;
+    }
+    .my-nav-bar .ui-btn {
+        margin: 0px !important;
+    }
+
+
+    /*Hide or show some menus according to the width of the screen*/
+    .display_when_screen_is_wide{
+        display:none;
+    }
+    .display_when_screen_is_narrow{
+        display:block;
+    }
+}

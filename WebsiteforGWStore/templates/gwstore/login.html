@@ -1,0 +1,218 @@
+{% load staticfiles %}
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1">
+    <title>用户登录</title>
+</head>
+
+<body>
+<link rel="stylesheet" href="{% static 'gwstore/css/my_breakpoint_and_common_style.css' %}"/>
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"/>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.15.0/jquery.validate.js"></script>
+<style>
+    /*Remove the left padding from the labels so that they can be aligned to the left side.*/
+    label.ui-body{
+        padding-left:0px;
+    }
+
+    .middle_content .ui-title{
+        margin-left:auto !important;/*Remove the margin in the ui-header so that the text will not be cut*/
+        margin-right:auto !important;/*Remove the margin in the ui-header so that the text will not be cut*/
+    }
+
+    .error_msg {
+        font-size: 0.8em;
+        padding-bottom: 0.5em;
+        white-space: normal;
+        color: red;
+    }
+</style>
+
+{% include 'gwstore/navbar.html' %}
+
+<form data-ajax="false">
+    {% csrf_token %}
+<div class="middle_content">
+    {% if next %}
+        <div data-role="header">
+        <h1>需要先登录才能进行您的操作。</h1>
+        </div>
+    {% endif %}
+
+        <div role="main" class="ui-content">
+            <ul data-role="listview">
+                <li>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>用户名：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input id="username" name="username" type="text"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>密码：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input id="password" name="password" type="password"/>
+                            <div style="float: right"><a href="/resetpassword/" target="_self">忘记用户名或密码？</a></div>
+                        </div>
+                    </div>
+                </li>
+                <li> <span style="float:right">
+          <input id="btn_submit" type="button" value="登录" data-inline="true"/>
+          </span></li>
+                <li> <span style="float:right">
+                    <a href="/newuser/" target="_self">如果您还没有用户名的话，请点击此处注册</a>
+          </span></li>
+            </ul>
+        </div>
+    </div>
+    <input id="next" name="next" type="hidden" value="{{next|default_if_none:''}}"/>
+    <div data-role="popup" id="popup_alert" data-corners="true">
+    <a href="#" data-rel="back" data-role="button" data-icon="delete" data-iconpos="notext" class="ui-btn-right">Close</a>
+        <div id="error_content" style="padding: 20px"></div>
+    </div>
+</div>
+
+</form>
+<script>
+    $(document).ready(function () {
+        $("form").validate({
+            rules: {
+                username: {
+                    required: true
+
+                },
+                password: {
+                    required: true
+                }
+            },
+            messages: {
+                username: {
+                    required: "用户名不能为空。"
+                },
+                password: {
+                    required: "密码不能为空。"
+                }
+
+            },
+            errorPlacement: function (error, element) {
+                err_div = element.parent().next("div.error_msg");
+                if (err_div.length > 0)
+                //If the error div already exists, just replace the inner text with the new error message.
+                    err_div.text(error.text());
+                else
+                //Create a new div after the textbox.
+                    $("<div class='error_msg'></div>").text(error.text()).insertAfter(element.parent());
+            },
+            unhighlight: function(element, errorClass, validClass)  {
+                err_div = $(element).parent().next("div.error_msg");
+                if (err_div.length > 0)
+                //If the error div already exists, remove it.
+                    err_div.remove();
+            }
+        });
+    });
+
+    //Submit the form with ajax
+    $("#btn_submit").click(
+            function () {
+                if ($("form").valid()) {
+                    $.ajax({
+                                url: "/login/",
+                                method: "POST",
+                                data: {username: $("#username").val(), password: $("#password").val(), next:$("#next").val()}
+                            }
+                    ).done(
+                            function (data) {
+                                //Login succeeded
+                                if (data.status == "success")
+                                {
+                                    if (typeof data.next !== 'undefined')
+                                    {
+                                        window.location.href = data.next; //Go to previous page
+                                    }else{
+                                        window.location.href = "/" //Go back to home page
+                                    }
+                                }
+
+                                //Login failed.
+                                if (data.status != "success")
+                                {
+                                    //Display the error message from Server.
+                                    $("#error_content").html(data.error);
+                                    $("#popup_alert").popup("open");
+                                }
+                            }
+                    );
+                }
+            }
+    )
+
+    $(window).load(function (event) {
+        /*
+        //Make the labels align to the middle vertically.
+        $(".ui-block-a").each(function (index) {
+            $(this).find("label").css("padding-top", 0);
+            $(this).height($(this).next(".ui-block-b").height());
+            var rowHeight = $(this).height();
+            var labelHeight = $(this).children("label").height();
+            $(this).find("label").css("padding-top", (rowHeight - labelHeight) / 2);
+        })*/
+
+        //Remove the left margin from class "ui-select" so that the second column can align to left
+        $(".ui-select").css("margin-left", "0");
+    });
+
+
+    //For configuring CSRF for Django
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // using jQuery
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+
+    function include_csrf(xhr, settings) {
+        csrftoken = getCookie('csrftoken');
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            csrftoken = getCookie('csrftoken');
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    //<<<<<<<<<<<The CSRF configuration ends here<<<<<<<<<<<<<<
+
+
+</script>
+</body>
+</html>

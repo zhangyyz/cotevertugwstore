@@ -1,0 +1,992 @@
+{% load staticfiles %}
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1">
+    <title>输入快递单信息</title>
+</head>
+
+<body>
+<link rel="stylesheet" href="{% static 'gwstore/css/my_breakpoint_and_common_style.css' %}"/>
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"/>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+<script src="http://cdn.jsdelivr.net/jquery.validation/1.15.0/jquery.validate.min.js"></script>
+<style>
+    .error_msg {
+        font-size: 0.8em;
+        padding-bottom: 0.5em;
+        white-space: normal;
+        color: red;
+    }
+
+    /*Remove the left padding from the labels so that they can be aligned to the left side.*/
+    label.ui-body {
+        padding-left: 0px;
+    }
+</style>
+
+{% include 'gwstore/navbar.html' %}
+
+<form id="bill_form.form" action="" method="post" data-ajax="false">
+    {% csrf_token %}
+
+    <div id="main" class="middle_content">
+        <div role="main" class="ui-content">
+            <ul data-role="listview">
+                <li>
+                    <h1 class="ui-title">危险品</h1>
+                </li>
+                <li>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding: 5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>包裹内是否含有危险物品：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <select id="contain_dangerous_goods"
+                                    name="{{ bill_form.contain_dangerous_goods.html_name }}" data-role="flipswitch">
+                                <option value="No" {% if bill_form.contain_dangerous_goods.value == "No" %}
+                                        selected {% endif %}> 否
+                                </option>
+                                <option value="Yes"  {% if bill_form.contain_dangerous_goods.value == "Yes" %}
+                                        selected {% endif %}>是
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <h1 class="ui-title" role="heading">发件人信息</h1>
+                </li>
+                <li>
+                    <div for="selecting_auto_fill_sender_info" class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow"
+                         style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>是否利用历史地址自动填写：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <select id="auto_fill_sender_info" data-role="flipswitch">
+                                <option value="No">否</option>
+                                <option value="Yes" selected>是</option>
+                            </select>
+                        </div>
+                        <div for="selecting_history_sender_address" class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>请选择使用过的地址：</label>
+                        </div>
+                        <div for="selecting_history_sender_address" class="ui-block-b my-breakpoint-for-two-columns">
+                            <select id="history_sender_address" style="margin:0;">
+                                {% for history_sender_address in all_history_sender_addresses %}
+                                    <option value="{{ history_sender_address.sender_name }}!!!!{{ history_sender_address.sender_address }}!!!!{{ history_sender_address.sender_phone }}!!!!{{ history_sender_address.sender_post_code }}!!!!{{ history_sender_address.sender_district }}">
+                                        {{ history_sender_address.sender_name }},{{ history_sender_address.sender_phone }},{{ history_sender_address.sender_post_code }}
+                                    </option>
+                                {% endfor %}
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>发件人姓名：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.sender_name.html_name }}"
+                                   name="{{ bill_form.sender_name.html_name }}"
+                                   value="{{ bill_form.sender_name.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>发件人地址：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.sender_address.html_name }}"
+                                   name="{{ bill_form.sender_address.html_name }}"
+                                   value="{{ bill_form.sender_address.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns"></div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <div style="font-size:0.8em;padding-bottom:0.5em;white-space:normal !important">
+                                请使用英文地址，例如:　Apt
+                                308, 2839 Cote-Vertu, Saint-Laurent, H4R1P7
+                            </div>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns" style="padding-left:30px;"></div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>发件人电话：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="tel" id="{{ bill_form.sender_phone.html_name }}"
+                                   name="{{ bill_form.sender_phone.html_name }}"
+                                   value="{{ bill_form.sender_phone.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>发件人邮编：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.sender_post_code.html_name }}"
+                                   name="{{ bill_form.sender_post_code.html_name }}"
+                                   value="{{ bill_form.sender_post_code.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>发件人所处的区：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <select id="{{bill_form.sender_district.html_name}}" name="{{bill_form.sender_district.html_name}}" style="margin:0;">
+                                <option value="Downtown">Downtown</option>
+                                <option value="Laval">Laval</option>
+                                <option value="NDG">NDG</option>
+                                <option value="St-Laurent">St-Laurent</option>
+                                <option value="Verdun">Verdun</option>
+                                <option value="东区">东区</option>
+                                <option value="南岸">南岸</option>
+                                <option value="蒙大及其周边">蒙大及其周边</option>
+                                <option value="市中心">市中心</option>
+                                <option value="西岛">西岛</option>
+                                <option value="修女岛">修女岛</option>
+                            </select>
+                            <script>
+                                //Select the correct value according to last saved form.
+                                {% if bill_form.sender_district.value != None  %}
+                                $(window).load(function(){
+                                    $("#sender_district").val("{{ bill_form.sender_district.value}}");
+                                    $('#sender_district').selectmenu('refresh');});
+                                {% endif %}
+                            </script>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <h1 class="ui-title" role="heading">收件人信息</h1>
+                </li>
+                <li>
+                    <div for="selecting_auto_fill_receiver_info" class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow"
+                         style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>是否利用历史地址自动填写：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <select id="auto_fill_receiver_info" data-role="flipswitch">
+                                <option value="No">否</option>
+                                <option value="Yes" selected>是</option>
+                            </select>
+                        </div>
+                        <div for="selecting_history_receiver_address" class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>请选择使用过的地址：</label>
+                        </div>
+                        <div for="selecting_history_receiver_address" class="ui-block-b my-breakpoint-for-two-columns">
+                            <select id="history_receiver_address" style="margin:0;">
+                                {% for history_receiver_address in all_history_receiver_addresses %}
+                                    <option value="{{ history_receiver_address.receiver_name }}!!!!{{ history_receiver_address.receiver_address }}!!!!{{ history_receiver_address.receiver_phone }}!!!!{{ history_receiver_address.receiver_post_code }}">
+                                        {{ history_receiver_address.receiver_name }},{{ history_receiver_address.receiver_phone }},{{ history_receiver_address.receiver_address }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'> 收件人姓名：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.receiver_name.html_name }}"
+                                   name="{{ bill_form.receiver_name.html_name }}"
+                                   value="{{ bill_form.receiver_name.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>收件人地址：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.receiver_address.html_name }}"
+                                   name="{{ bill_form.receiver_address.html_name }}"
+                                   value="{{ bill_form.receiver_address.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns"></div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <div style="font-size:0.8em;padding-bottom:0.5em;white-space:normal !important">
+                                请使用中文地址，例如:辽宁省大连市　沙河口区中山街文香苑６号楼３单元２０２房
+                            </div>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns" style="padding-left:30px;"></div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>收件人电话：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="tel" id="{{ bill_form.receiver_phone.html_name }}"
+                                   name="{{ bill_form.receiver_phone.html_name }}"
+                                   value="{{ bill_form.receiver_phone.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>收件人邮编：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.receiver_post_code.html_name }}"
+                                   name="{{ bill_form.receiver_post_code.html_name }}"
+                                   value="{{ bill_form.receiver_post_code.value|default_if_none:'' }}"/>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <h1 class="ui-title" role="heading">包裹丢失保险</h1>
+                </li>
+                <li>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class="ui-body">是否购买包裹丢失的保险：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <select data-role="flipswitch" id="{{ bill_form.buy_package_lost_insurance.html_name }}"
+                                    name="{{ bill_form.buy_package_lost_insurance.html_name }}"
+                                    value="{{ bill_form.buy_package_lost_insurance.value|default_if_none:'' }}">
+                                {% if bill_form.buy_package_lost_insurance.value == 'Yes' %}
+                                    <option value="No">否</option>
+                                    <option value="Yes" selected>是</option>
+                                {% else %}
+                                    <option value="No" selected>否</option>
+                                    <option value="Yes">是</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                    <div for="inputting_package_lost_insured_amount"
+                         class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>包裹内全部货物的总价值：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <table style="padding:0;margin:0;border:none;border-collapse:collapse">
+                                <tr>
+                                    <td><input type="text" id="{{ bill_form.package_lost_insured_amount.html_name }}"
+                                               name="{{ bill_form.package_lost_insured_amount.html_name }}"
+                                               value="{{ bill_form.package_lost_insured_amount.value|default_if_none:'0.00' }}"/>
+                                    </td>
+                                    <td>加元</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns"></div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <div style="font-size:0.8em;padding-bottom:0.5em;white-space:normal !important">
+                                注：即使不购买包裹丢失的保险，在包裹丢失的情况下，客户只要提供丢失物品的购物小票，联通快递会根据购物小票上的金额免费向客户赔付，但是免费赔付的上限是100加元。
+                            </div>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>需要支付的保费为：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <table style="padding:0;margin:0;border:none;border-collapse:collapse">
+                                <tr>
+                                    <td><strong><span id="for_displaying_package_lost_premium_amount">
+                                               {{ bill_form.package_lost_insured_amount.value|default_if_none:'0.00' }} x 5% = {{ bill_form.package_lost_premium_amount.value|default_if_none:'0.00' }}
+                                        </span></strong>
+                                        <input type="hidden"
+                                               id="{{ bill_form.package_lost_premium_amount.html_name }}"
+                                               name="{{ bill_form.package_lost_premium_amount.html_name }}"
+                                               value="{{ bill_form.package_lost_premium_amount.value|default_if_none:'0.00' }}"/>
+                                    </td>
+                                    <td>加元</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <h1 class="ui-title" role="heading">包裹内物品的详细描述</h1>
+                </li>
+                <li>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品1的品牌及描（必填）：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_1_description.html_name }}"
+                                   name="{{ bill_form.item_1_description.html_name }}"
+                                   value="{{ bill_form.item_1_description.value|default_if_none:'' }}"/>
+
+                            <div style="font-size:0.8em;padding-bottom:0.5em;white-space:normal !important">例如：美赞臣奶粉 1段
+                                680g
+                            </div>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品1的数量（必填）：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_1_quantity.html_name }}"
+                                   name="{{ bill_form.item_1_quantity.html_name }}"
+                                   value="{{ bill_form.item_1_quantity.value|default_if_none:'' }}"/>
+                            <div style="font-size:0.8em;padding-bottom:0.5em;white-space:normal !important">只需填写数字，不必填写单位。例如：如果是4罐奶粉，只需填写 4 就可以了。</div>
+                        </div>
+                    </div>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品2的品牌及描述：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_2_description.html_name }}"
+                                   name="{{ bill_form.item_2_description.html_name }}"
+                                   value="{{ bill_form.item_2_description.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品2的数量：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_2_quantity.html_name }}"
+                                   name="{{ bill_form.item_2_quantity.html_name }}"
+                                   value="{{ bill_form.item_2_quantity.value|default_if_none:'' }}"/>
+                        </div>
+                    </div>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品3的品牌及描述：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_3_description.html_name }}"
+                                   name="{{ bill_form.item_3_description.html_name }}"
+                                   value="{{ bill_form.item_3_description.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品3的数量：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_3_quantity.html_name }}"
+                                   name="{{ bill_form.item_3_quantity.html_name }}"
+                                   value="{{ bill_form.item_3_quantity.value|default_if_none:'' }}"/>
+                        </div>
+                    </div>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品4的品牌及描述：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_4_description.html_name }}"
+                                   name="{{ bill_form.item_4_description.html_name }}"
+                                   value="{{ bill_form.item_4_description.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品4的数量：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_4_quantity.html_name }}"
+                                   name="{{ bill_form.item_4_quantity.html_name }}"
+                                   value="{{ bill_form.item_4_quantity.value|default_if_none:'' }}"/>
+                        </div>
+                    </div>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品5的品牌及描述：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_5_description.html_name }}"
+                                   name="{{ bill_form.item_5_description.html_name }}"
+                                   value="{{ bill_form.item_5_description.value|default_if_none:'' }}"/>
+                        </div>
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            <label class='ui-body'>物品5的数量：</label>
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            <input type="text" id="{{ bill_form.item_5_quantity.html_name }}"
+                                   name="{{ bill_form.item_5_quantity.html_name }}"
+                                   value="{{ bill_form.item_5_quantity.value|default_if_none:'' }}"/>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <h1 class="ui-title" role="heading">包裹重量</h1>
+                </li>
+                <li>
+                    <div class="ui-grid-a my-breakpoint-for-two-columns ui-corner-all ui-shadow" style="padding:5px;">
+                        <div class="ui-block-a my-breakpoint-for-two-columns">
+                            {% if bill_form.status_code.value != 'B' and bill_form.status_code.value != 'B1' %}
+                                <label class='ui-body'>预估磅数：</label>
+                            {% else %}
+                                <label class='ui-body'>磅数：</label>
+                            {% endif %}
+                        </div>
+                        <div class="ui-block-b my-breakpoint-for-two-columns">
+                            {% if bill_form.status_code.value != 'B' and bill_form.status_code.value != 'B1' or request.user.is_superuser %}
+                                <table data-role="none">
+                                <tr>
+                                    <td><input type="text" id="{{ bill_form.weight_lb.html_name }}"
+                                       name="{{ bill_form.weight_lb.html_name }}"
+                                       value="{{ bill_form.weight_lb.value|default_if_none:'' }}"/></td><td>磅</td>
+                                </tr>
+                                </table>
+                            {% else %}
+                                <strong><span id="for_displaying_readonly_weight">
+                                    {{ bill_form.weight_lb.value|default_if_none:'' }} 磅
+                                        </span></strong>
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <span style="float:right"><input id="btn_submit" type="button" value="提交"
+                                                     data-inline="true"/></span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <input type="hidden" id="bill_number" name="bill_number"
+           value="{{ bill_form.bill_number.value|default_if_none:'0' }}"/>
+
+    <input type="hidden" id="status_code" name="status_code"
+           value="{{ bill_form.status_code.value|default_if_none:'A' }}"/>
+
+    <input type="hidden" id="uuid_for_avoiding_duplicate" name="uuid_for_avoiding_duplicate"
+           value="{{ bill_form.uuid_for_avoiding_duplicate.value }}"/>
+
+    <input type="hidden" id="next" name="next" value="{{ request.GET.next|default_if_none:'' }}"/>
+
+    <div data-role="popup" id="popup_alert" data-corners="true">
+        <a href="#" data-rel="back" data-role="button" data-icon="delete" data-iconpos="notext" class="ui-btn-right">Close</a>
+
+        <div id="error_content" style="padding: 20px"></div>
+    </div>
+
+    <div data-role="popup" id="popup_success" data-overlay-theme="b" data-theme="b" data-dismissible="false"
+         style="max-width:400px;">
+        <div data-role="header" data-theme="a">
+            <strong>您的快递单已经提交成功！</strong>
+        </div>
+        <div role="main" class="ui-content">
+            <h3 class="ui-title">您的快递单已经提交成功。如果您的所有的快递单都已经填写完成，请拨打电话514-813-4568预约取货时间。<br>如果您还有新的快递单没有填写，请点击下面的“再填写一个新的快递单”按钮。
+            </h3></p>
+            <a href="/billinput/" data-ajax="false" class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b">再填写一个新的快递单</a>
+            <a href="/billlist/" data-ajax="false" class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b">完成（没有新的快递单可填写）</a>
+        </div>
+    </div>
+
+
+    <div data-role="popup" id="popup_confirm_complete" data-overlay-theme="b" data-theme="b" data-dismissible="false"
+         style="max-width:400px;">
+        <div data-role="header" data-theme="a">
+            <strong>信息已经补充完整？</strong>
+        </div>
+        <div role="main" class="ui-content">
+            <h3 class="ui-title">该快递单的当前状态是“已经被联通Cote-Vertu收货点接收,但是快递单信息不完整”，如果您已经补充完整，请点击下面的“确认已补充完整”按钮。</h3><p>
+            <a href="#" id="btn_confirm_complete" data-ajax="false"
+               class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b">确认已补充完整</a>
+            <a href="#" id="btn_confirm_not_complete" data-ajax="false"
+               class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" data-rel="back">不完整（还需要继续补充）</a>
+        </div>
+    </div>
+
+</form>
+<script>
+    //Adjust the layout. For example, align the labels to middle.
+    $(window).load(function (event) {
+        //Remove the left margin from class "ui-select" so that the second column can align to left
+        $(".ui-select").css("margin-left", "0");
+    });
+
+    //Initialize and attach events.
+    $(window).load(function () {
+        //Attach the change event to contain_dangerous_goods for validating this element.
+        $("#contain_dangerous_goods").on('change', function () {
+            $("#contain_dangerous_goods").valid(); //Call this function, so that the JQuery Validation will check this flip switch.
+        });
+
+        //Attach the show hide function to auto_fill_sender_info
+        $("#auto_fill_sender_info").on('change', function () {
+            if ($(this).val() == 'No')
+                $("div[for='selecting_history_sender_address']").hide();
+            else{
+                $("div[for='selecting_history_sender_address']").show();
+                $("#history_sender_address").trigger("change");;
+            }
+
+        });
+
+        //This function will be called when the user selects a value from the history_sender_address list.
+        function populate_sender_address() {
+            splitted_array = $("#history_sender_address").val().split("!!!!");
+            $("#sender_name").val(splitted_array[0]);
+            $("#sender_address").val(splitted_array[1]);
+            $("#sender_phone").val(splitted_array[2]);
+            $("#sender_post_code").val(splitted_array[3]);
+            $("#sender_district").val(splitted_array[4]);
+            $('#sender_district').selectmenu('refresh');
+        }
+
+        //Attach the populating address function to the history_sender_address drop down list
+        $("#history_sender_address").on('change', populate_sender_address);
+
+        //Check whether this user has historical sender address. If he doesn't have any address, hide the div.
+        if ($("#history_sender_address option").size() == 0)
+            $("div[for='selecting_auto_fill_sender_info']").hide();
+        else {
+            if ($("#bill_number").val() == '0') //For creating a new bill
+                populate_sender_address();
+        }
+
+        //This function is used to show hide the auto_fill_receiver_info div when the auto_fill_receiver_info is changed.
+        function show_hide_auto_fill_receiver_info_div(){
+             if ($("#auto_fill_receiver_info").val() == 'No')
+            {
+                $("div[for='selecting_history_receiver_address']").hide();
+                if ($("#bill_number").val() == '0') {
+                    //If it's a new bill and the user selects 'No', that means he has a new receiver to fill in,
+                    //so we should clear the receiver's info.
+                    $("#receiver_name").val('');
+                    $("#receiver_address").val('');
+                    $("#receiver_phone").val('');
+                    $("#receiver_post_code").val('');
+                }
+            }
+            else {
+                 $("div[for='selecting_history_receiver_address']").show();
+                 $("#history_receiver_address").trigger("change");
+             }
+        }
+        //Attach the show hide function to auto_fill_receiver_info
+        $("#auto_fill_receiver_info").on('change', show_hide_auto_fill_receiver_info_div);
+
+        //This function will be called when the user selects a value from the history_receiver_address list.
+        function populate_receiver_address() {
+            splitted_array = $("#history_receiver_address").val().split("!!!!");
+            $("#receiver_name").val(splitted_array[0]);
+            $("#receiver_address").val(splitted_array[1]);
+            $("#receiver_phone").val(splitted_array[2]);
+            $("#receiver_post_code").val(splitted_array[3]);
+        }
+
+        //Attach the populating address function to the history_sender_address drop down list
+        $("#history_receiver_address").on('change', populate_receiver_address);
+
+        //Check whether this user has historical receiver address. If he doesn't have any address, hide the div.
+        if ($("#history_receiver_address option").size() == 0)
+            $("div[for='selecting_auto_fill_receiver_info']").hide();
+        else {
+            if ($("#bill_number").val() == '0') //For creating a new bill
+                populate_receiver_address();
+        }
+
+        //If it is modifying a existing bill, we should select No in auto_fill_sender_info and auto_fill_receiver_info
+        if ($("#bill_number").val() != '0') //For modifying existing bill
+        {
+            $("#auto_fill_sender_info").val('No');
+            $("#auto_fill_sender_info").flipswitch('refresh');
+            $("#auto_fill_receiver_info").val('No');
+            $("#auto_fill_receiver_info").flipswitch('refresh');
+        }
+
+
+        //Attach the show hide function to buy_package_lost_insurance
+        $("#buy_package_lost_insurance").on('change', function () {
+            if ($(this).val() == 'No')
+                $("div[for='inputting_package_lost_insured_amount']").hide();
+            else {
+                $("div[for='inputting_package_lost_insured_amount']").show();
+                $("div[for='inputting_package_lost_insured_amount']").trigger('change');
+            }
+        });
+        //We need to check whether to hide or show the inputting div on page load.
+        $("#buy_package_lost_insurance").trigger("change");
+
+
+        //Attach the insurance premium amount calculation logic to the insured amount focusout event
+        $("#package_lost_insured_amount").focusout(
+                function () {
+                    //Use JQuery Validate to validate the input value first.
+                    if ($(this).valid()) {
+                        $(this).val(parseFloat($(this).val()).toFixed(2));//Convert the input value to two decimals
+                        premium = parseFloat($(this).val()) * 0.05;
+                        $("#package_lost_premium_amount").val(premium.toFixed(2));
+                        $("#for_displaying_package_lost_premium_amount").text($(this).val() + " x 5% = " + premium.toFixed(2))
+                    }
+                }
+        );
+
+        //Attach rounding logic to the weight focusout event
+        $("#weight_lb").focusout(
+                function () {
+                    //Use JQuery Validate to validate the input value first.
+                    if ($(this).valid() && $.trim($(this).val()) != "") {
+                        $(this).val(parseFloat($(this).val()).toFixed(2));//Convert the input value to two decimals
+                    }
+                }
+        );
+    });
+
+    $(document).ready(function () {
+        $.validator.addMethod(
+                "regex",
+                function (value, element, regexp) {
+                    var check = false;
+                    return this.optional(element) || regexp.test(value);
+                },
+                "Your input is not valid."
+        );
+
+        $.validator.addMethod(
+                'validate_insured_amount',
+                function (value, element) {
+                    var check = false;
+                    if ($("#buy_package_lost_insurance").val() == 'No')
+                        return true;
+                    if ($("#buy_package_lost_insurance").val() == 'Yes') {
+                        insured_amount = parseFloat(value);
+                        if (!isNaN(insured_amount) && insured_amount > 100 && insured_amount <= 400)
+                            return true;
+                        else
+                            return false;
+                    }
+                },
+                "请输入一个大于１００小于４００的数字。"
+        )
+
+        $("form").validate({
+            rules: {
+                contain_dangerous_goods: {
+                    required: true,
+                    regex: /No/
+                },
+
+                sender_name: {
+                    required: true,
+                    maxlength: 14
+                },
+
+                sender_address: {
+                    required: true,
+                    maxlength: 100 //The address should be in English, so it will be longer.
+                },
+
+                sender_phone: {
+                    required: true,
+                    maxlength: 16,
+                    regex: /^[-\+\s0-9]{7,16}$/
+                },
+
+                sender_post_code: {
+                    required: true,
+                    maxlength: 10
+                },
+
+                receiver_name: {
+                    required: true,
+                    maxlength: 14
+                },
+
+                receiver_address: {
+                    required: true,
+                    maxlength: 40
+                },
+
+                receiver_phone: {
+                    required: true,
+                    maxlength: 16,
+                    regex: /^[-\+\s0-9]{7,16}$/
+                },
+
+                receiver_post_code: {
+                    required: true,
+                    maxlength: 10
+                },
+
+                buy_package_lost_insurance: {
+                    required: true
+                },
+
+                item_1_description: {
+                    required: true,
+                    maxlength: 30
+                },
+
+                item_1_quantity: {
+                    required: true,
+                    digits: true,
+                    maxlength: 6
+                },
+
+                item_2_description: {
+                    maxlength: 30
+                },
+
+                item_2_quantity: {
+                    digits: true,
+                    maxlength: 6
+                },
+                item_3_description: {
+                    maxlength: 30
+                },
+
+                item_3_quantity: {
+                    digits: true,
+                    maxlength: 6
+                },
+                item_4_description: {
+                    maxlength: 30
+                },
+
+                item_4_quantity: {
+                    digits: true,
+                    maxlength: 6
+                },
+                item_5_description: {
+                    maxlength: 30
+                },
+
+                item_5_quantity: {
+                    digits: true,
+                    maxlength: 6
+                },
+                weight_lb:{
+                    regex: /^(\d+\.?\d*)$|^$/
+                },
+                package_lost_insured_amount: {
+                    validate_insured_amount: true
+                }
+            },
+
+            messages: {
+                contain_dangerous_goods: {
+                    regex: "如果包裹内含有危险品，请不要填写此快递单。请先联系我们的客服确定是否可以邮寄。"
+                },
+
+                sender_name: {
+                    required: "发件人姓名不能为空。",
+                    maxlength: "发件人姓名不能超过１４个字符。"
+                },
+
+                sender_address: {
+                    required: "发件人地址不能为空。",
+                    maxlength: "发件人地址不能超过１００个字符。"
+                },
+
+                sender_phone: {
+                    required: "发件人电话不能为空。",
+                    maxlength: "发件人电话不能超过２０个字符。",
+                    regex: "请输入正确的电话号码。"
+                },
+
+                sender_post_code: {
+                    required: "发件人邮编不能为空。",
+                    maxlength: "发件人电话不能超过１０个字符。"
+                },
+
+                receiver_name: {
+                    required: "收件人姓名不能为空。",
+                    maxlength: "收件人姓名不能超过１４个字符。"
+                },
+
+                receiver_address: {
+                    required: "收件人地址不能为空。",
+                    maxlength: "收件人地址不能超过２００个字符。"
+                },
+
+                receiver_phone: {
+                    required: "收件人电话不能为空。",
+                    maxlength: "收件人电话不能超过２０个字符。",
+                    regex: "请输入正确的电话号码。"
+                },
+
+                receiver_post_code: {
+                    required: "收件人邮编不能为空。",
+                    maxlength: "收件人邮编不能超过１０个字符。"
+                },
+
+                buy_package_lost_insurance: {
+                    required: true
+                },
+
+                item_1_description: {
+                    required: "物品１的描述不能为空。",
+                    maxlength: "物品１的描述不能超过３０个字符。"
+                },
+                item_1_quantity: {
+                    required: "物品１的数量不能为空。",
+                    digits:"请输入一个正整数。",
+                    maxlength: "物品１的数量不能超过6个字符。"
+                },
+                item_2_description: {
+                    maxlength: "物品２的描述不能超过３０个字符。"
+                },
+                item_2_quantity: {
+                    digits:"请输入一个正整数。",
+                    maxlength: "物品２的数量不能超过6个字符。"
+                },
+                item_3_description: {
+                    maxlength: "物品３描述不能超过３０个字符。"
+                },
+                item_3_quantity: {
+                    digits:"请输入一个正整数。",
+                    maxlength: "物品３的数量不能超过6个字符。"
+                },
+                item_4_description: {
+                    maxlength: "物品４的描述不能超过３０个字符。"
+                },
+                item_4_quantity: {
+                    digits:"请输入一个正整数。",
+                    maxlength: "物品４的数量不能超过6个字符。"
+                },
+                item_5_description: {
+                    maxlength: "物品５的描述不能超过３０个字符。"
+                },
+                item_5_quantity: {
+                    digits:"请输入一个正整数。",
+                    maxlength: "物品５的数量不能超过6个字符。"
+                },
+                weight_lb: {
+                    regex:"请输入一个正数。"
+                }
+
+            },
+
+
+            errorPlacement: function (error, element) {
+                err_div = element.parent().next("div.error_msg");
+                if (err_div.length > 0)
+                //If the error div already exists, just replace the inner text with the new error message.
+                    err_div.text(error.text());
+                else
+                //Create a new div after the textbox.
+                    $("<div class='error_msg'></div>").text(error.text()).insertAfter(element.parent());
+            },
+
+            /*//This one doesn't work for weight_lb when the input is deleted.So I used unhighlight instead.
+            success: function (element) {
+                err_div = element.parent().next("div.error_msg");
+                if (err_div.length > 0)
+                //If the error div already exists, remove it.
+                    err_div.remove();
+            },*/
+
+            unhighlight: function(element, errorClass, validClass)  {
+                err_div = $(element).parent().next("div.error_msg");
+                if (err_div.length > 0)
+                //If the error div already exists, remove it.
+                    err_div.remove();
+            }
+        });
+    });
+
+
+    function submit_data() {
+        return $.ajax({
+                    url: "/billinput/",
+                    method: "POST",
+                    data: $("form").serialize() //Submit all fields in the form
+                }
+        );
+    }
+
+    $(window).load(function () {
+                //Attach the submit event to the Submit button.
+                $("#btn_submit").click(
+                        function () {
+                            if ($("form").valid()) {
+                                //It's a bill which has already been picked up, but its information is not completed.
+                                if ($("#status_code").val() == 'B1') {
+                                    $("#popup_confirm_complete").popup("open");//The popup box will continue to submit the page
+                                }
+
+
+
+                                //It's a bill which has NOT been picked up.
+                                //Or it's a bill which has already been picked up and the information is completed, but
+                                // the super user wants to change it..
+                                if ($("#status_code").val() == 'A' ||
+                                $("#status_code").val() == 'B') {
+                                    submit_data().done(
+                                            function (data) {
+                                                //Saving succeeded
+                                                if (data.status == "success") {
+                                                    if ($("#next").val() != '')
+                                                        window.location.href = $("#next").val();
+                                                    else
+                                                        $("#popup_success").popup("open")
+                                                }
+                                                //Saving failed.
+                                                if (data.status != "success") {
+                                                    //Display the error message from Server.
+                                                    $("#error_content").html(data.error);
+                                                    $("#popup_alert").popup("open");
+                                                }
+                                            }
+                                    )
+                                }
+
+                            } else {
+                                //There are some inputs on the form which is not valid
+                                //Display the error message
+                                $("#error_content").html("页面上还有一些错误，请确保所有输入都正确以后再提交。");
+                                $("#popup_alert").popup("open");
+                            }
+                        }
+                );
+
+                //Attach the submit event to the Confirming complete button.
+                $("#btn_confirm_complete").click(
+                        function () {
+                            $("#popup_confirm_complete").popup("close"); //Close the popup first.
+
+                            //Pop up the loader widget before ajax request.
+                            $("#btn_submit").prop("disabled", true);
+                            $("#btn_submit").button('refresh')
+                            $.mobile.loading("show", {
+                                text: "正在提交中，请稍等...",
+                                textVisible: true,
+                                theme: "b",
+                                html: ""
+                            });
+
+                            $("#status_code").val("B"); //Change the bill's status to 'Completed and already pickup'
+                            submit_data().done(
+                                    function () {
+                                        $.mobile.loading("hide");//Close the loader widget
+                                        alert("您的快递单信息已经补充完成；系统已经发送一封确认Email到您信箱，请查收。");
+                                        window.location.href = $("#next").val();//Go back to the previous page.
+                                    }
+                            )
+                        }
+                )
+            }
+    );
+
+
+    //For configuring CSRF for Django
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // using jQuery
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+
+    function include_csrf(xhr, settings) {
+        csrftoken = getCookie('csrftoken');
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            csrftoken = getCookie('csrftoken');
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    //<<<<<<<<<<<The CSRF configuration ends here<<<<<<<<<<<<<<
+</script>
+</body>
+</html>
